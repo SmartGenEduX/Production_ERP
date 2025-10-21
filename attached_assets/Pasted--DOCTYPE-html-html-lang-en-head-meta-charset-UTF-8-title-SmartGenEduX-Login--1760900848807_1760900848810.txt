@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SmartGenEduX Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #1a237e 0%, #6a1b9a 100%);
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url('data:image/svg+xml;utf8,<svg width="120" height="120" xmlns="http://www.w3.org/2000/svg"><g opacity="0.07"><rect x="20" y="20" width="80" height="80" rx="18" fill="none" stroke="white" stroke-width="2"/><circle cx="60" cy="60" r="12" fill="none" stroke="white" stroke-width="2"/><path d="M60 20v20M60 80v20M20 60h20M80 60h20" stroke="white" stroke-width="2" fill="none"/></g></svg>') repeat;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .blur-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.32;
+      z-index: 1;
+    }
+    .blur1 { width: 320px; height: 320px; background: #7c4dff; top: 8%; left: 4%; }
+    .blur2 { width: 180px; height: 180px; background: #3949ab; bottom: 8%; right: 8%; }
+    .blur3 { width: 120px; height: 120px; background: #6a1b9a; top: 60%; left: 70%; }
+    .login-container {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      background: rgba(30, 32, 60, 0.68);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      backdrop-filter: blur(18px);
+      border-radius: 32px;
+      padding: 48px 36px 32px 36px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1.5px solid rgba(255,255,255,0.13);
+      margin: 32px 0;
+    }
+    .logo-container {
+      background: rgba(60, 60, 120, 0.7);
+      border-radius: 50%;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 24px 0 #7c4dff55, 0 0 0 8px rgba(124,77,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-container img {
+      width: 64px;
+      height: 64px;
+      display: block;
+    }
+    .login-card h2 {
+      margin: 0 0 8px 0;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-align: center;
+    }
+    .login-card .tagline {
+      font-size: 1rem;
+      color: #b39ddb;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+    .login-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .input-group {
+      position: relative;
+      width: 100%;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 18px 16px 18px 48px;
+      background: rgba(255,255,255,0.09);
+      border: 1.5px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      color: #fff;
+      font-size: 1.08rem;
+      outline: none;
+      transition: border 0.2s;
+      font-family: inherit;
+    }
+    .input-group input:focus {
+      border-color: #7c4dff;
+    }
+    .input-group label {
+      position: absolute;
+      left: 48px;
+      top: 18px;
+      color: #b39ddb;
+      font-size: 1.08rem;
+      pointer-events: none;
+      transition: 0.2s;
+      background: transparent;
+    }
+    .input-group input:focus + label,
+    .input-group input:not(:placeholder-shown) + label {
+      top: -12px;
+      left: 40px;
+      font-size: 0.88rem;
+      color: #7c4dff;
+      background: rgba(30,32,60,0.7);
+      padding: 0 6px;
+      border-radius: 4px;
+    }
+    .input-group .icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #b39ddb;
+      font-size: 1.3rem;
+      pointer-events: none;
+    }
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+    .form-options label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .form-options input[type="checkbox"] {
+      accent-color: #7c4dff;
+      width: 16px;
+      height: 16px;
+    }
+    .form-options .forgot {
+      color: #7c4dff;
+      text-decoration: none;
+      font-weight: 500;
+      transition: text-decoration 0.2s;
+    }
+    .form-options .forgot:hover {
+      text-decoration: underline;
+    }
+    .sign-in-btn {
+      width: 100%;
+      padding: 15px 0;
+      background: linear-gradient(90deg, #7c4dff 0%, #3949ab 100%);
+      color: #fff;
+      font-size: 1.13rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px 0 #7c4dff33;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .sign-in-btn:hover, .sign-in-btn:focus {
+      transform: scale(1.03);
+      box-shadow: 0 4px 24px 0 #7c4dff55;
+    }
+    .login-footer {
+      margin-top: 28px;
+      width: 100%;
+      text-align: center;
+      font-size: 1rem;
+      color: #b39ddb;
+    }
+    .login-footer a {
+      color: #7c4dff;
+      text-decoration: none;
+      font-weight: 500;
+      margin-left: 4px;
+    }
+    .login-footer a:hover {
+      text-decoration: underline;
+    }
+    .microtext {
+      display: block;
+      font-size: 0.87rem;
+      color: #8e99f3;
+      margin-top: 6px;
+    }
+    .page-footer {
+      position: fixed;
+      bottom: 16px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 0.95rem;
+      color: #b39ddb;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .powered-by {
+      font-size: 0.85rem;
+      color: #8e99f3;
+      margin-top: 2px;
+    }
+    .watermark {
+      position: fixed;
+      bottom: 12px;
+      right: 18px;
+      opacity: 0.09;
+      z-index: 1;
+      width: 100px;
+      height: 100px;
+      pointer-events: none;
+    }
+    @media (max-width: 600px) {
+      .login-card {
+        padding: 28px 8px 18px 8px;
+        border-radius: 18px;
+      }
+      .logo-container {
+        padding: 12px;
+      }
+      .watermark {
+        width: 48px;
+        height: 48px;
+      }
+      .blur1, .blur2, .blur3 {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="blur-shape blur1"></div>
+  <div class="blur-shape blur2"></div>
+  <div class="blur-shape blur3"></div>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="logo-container">
+        <img src="smartgenedux-logo.png" alt="SmartGenEduX Logo">
+      </div>
+      <h2>Welcome Back</h2>
+      <div class="tagline">Complete School Management ERP</div>
+      <form class="login-form" autocomplete="off" id="loginForm">
+        <div class="input-group">
+          <span class="icon">👤</span>
+          <input type="email" id="email" name="email" required placeholder=" " autocomplete="username" />
+          <label for="email">Email Address</label>
+        </div>
+        <div class="input-group">
+          <span class="icon">🔒</span>
+          <input type="password" id="password" name="password" required placeholder=" " autocomplete="current-password" />
+          <label for="password">Password</label>
+        </div>
+        <div class="form-options">
+          <label>
+            <input type="checkbox" name="remember" />
+            Remember me
+          </label>
+          <a href="#" class="forgot">Forgot password?</a>
+        </div>
+        <button type="submit" class="sign-in-btn">
+          <span>➤</span> Sign In
+        </button>
+      </form>
+      <div class="login-footer">
+        Don’t have an account?
+        <a href="#">Create Account</a>
+        <span class="microtext">Contact administrator for enterprise setup</span>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    © 2025 SmartGenEduX. All rights reserved.
+    <div class="powered-by">Powered by Advanced School Management Technology</div>
+  </div>
+  <img src="smartgenedux-logo.png" alt="SmartGenEduX Watermark" class="watermark" />
+  
+  <!-- Supabase SDK **must** be before your JS code -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const SUPABASE_URL = 'https://waqttehjaifdkcbovund.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhcXR0ZWhqYWlmZGtjYm92dW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Mjk1ODIsImV4cCI6MjA2NTIwNTU4Mn0.nv1_UIuXl-wSfkfTMvwCUsJTGO65TwZ2D8a571ELKJ0';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const loginForm = document.getElementById('loginForm');
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = loginForm.email.value;
+      const password = loginForm.password.value;
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          alert('Login failed: ' + error.message);
+          return;
+        }
+        alert('Login successful! Redirecting...');
+        window.location.href = '/dashboard';
+      } catch (err) {
+        alert('Unexpected error: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

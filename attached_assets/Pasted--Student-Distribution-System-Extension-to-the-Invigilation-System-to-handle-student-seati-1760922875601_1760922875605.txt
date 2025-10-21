@@ -1,0 +1,1177 @@
+/**
+ * Student Distribution System
+ * Extension to the Invigilation System to handle student seating distribution
+ */
+/**
+ * Helper function to properly format roll number ranges
+ * This prevents issues like "10-1009" instead of "10-19"
+ */
+function formatRollRange(start, end) {
+  // Ensure both are treated as numbers
+  const startNum = Number(start);
+  const endNum = Number(end);
+  
+  return `${startNum}-${endNum}`;
+}
+/**
+ * Sets up the necessary sheets for student distribution
+ */
+function setupStudentDistribution() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Create CLASS DATA sheet
+  let sheet = ss.getSheetByName("CLASS DATA");
+  if (!sheet) {
+    sheet = ss.insertSheet("CLASS DATA");
+    const headers = ['CLASS', 'SECTION', 'START ROLL NO', 'END ROLL NO', 'TOTAL STUDENTS', 'NOTES'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    
+    // Add sample data
+    const sampleData = [
+      ['IX', 'A1', 1, 38, 38, ''],
+      ['IX', 'A2', 1, 38, 38, ''],
+      ['X', 'A1', 1, 38, 38, ''],
+      ['X', 'A2', 1, 38, 38, '']
+    ];
+    
+    sheet.getRange(2, 1, sampleData.length, sampleData[0].length).setValues(sampleData);
+    sheet.setFrozenRows(1);
+  }
+  
+  // Create DISTRIBUTION SETTINGS sheet
+  sheet = ss.getSheetByName("DISTRIBUTION SETTINGS");
+  if (!sheet) {
+    sheet = ss.insertSheet("DISTRIBUTION SETTINGS");
+    const headers = ['SETTING', 'VALUE', 'DESCRIPTION'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    
+    // Add settings
+    const settings = [
+      ['MIX_STRATEGY', 'STRATIFIED', 'How to mix students across rooms (STRATIFIED, BY_CLASS, RANDOM)'],
+      ['TARGET_PER_ROOM', 39, 'Target number of students per room'],
+      ['MIXING_PATTERN', 'IX_X', 'Which classes to mix (IX_X, NONE, CUSTOM)'],
+      ['USE_GAPS', 'TRUE', 'Whether to leave gaps between different sections'],
+      ['DISTRIBUTION_MODE', 'HALF_ROLL_SPREAD', 'Distribution mode (HALF_ROLL_SPREAD, GROUPS_OF_THREE, BALANCED)']
+    ];
+    
+    sheet.getRange(2, 1, settings.length, settings[0].length).setValues(settings);
+    sheet.setFrozenRows(1);
+  }
+  
+  // Check if ROOMS LIST exists, if not, create it
+  sheet = ss.getSheetByName("ROOMS LIST");
+  if (!sheet) {
+    sheet = ss.insertSheet("ROOMS LIST");
+    const headers = ['ROOM NAME', 'CAPACITY', 'NOTES'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    
+    // Add sample rooms
+    const sampleRooms = [
+      ['X A1', 40, 'Ground floor'],
+      ['X A2', 40, ''],
+      ['IX A1', 40, ''],
+      ['IX A2', 40, ''],
+      ['Library', 60, 'Larger space'],
+      ['IT Lab', 40, 'Computer lab'],
+      ['Terrace 1', 40, 'Open air'],
+      ['Terrace 2', 40, 'Open air']
+    ];
+    
+    sheet.getRange(2, 1, sampleRooms.length, sampleRooms[0].length).setValues(sampleRooms);
+    sheet.setFrozenRows(1);
+  }
+  
+  // Create data validation for AVAILABLE column
+  const availableRange = sheet.getRange("C2:C1000");
+  const availableRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['YES', 'NO'], true)
+    .build();
+  availableRange.setDataValidation(availableRule);
+  
+  sheet.setFrozenRows(1);
+  
+  // Create STUDENT DISTRIBUTION sheet
+  sheet = ss.getSheetByName("STUDENT DISTRIBUTION");
+  if (!sheet) {
+    sheet = ss.insertSheet("STUDENT DISTRIBUTION");
+    const headers = ['ROOM', 'CAPACITY', 'CLASS', 'SECTION', 'ROLL NUMBERS', 'COUNT', 'NOTE'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  
+  // Create INVIGILATOR REFERENCE sheet
+  sheet = ss.getSheetByName("INVIGILATOR REFERENCE");
+  if (!sheet) {
+    sheet = ss.insertSheet("INVIGILATOR REFERENCE");
+    const headers = ['ROOM', 'STUDENTS BY CLASS', 'TOTAL COUNT'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  
+  // Create CLASS TEACHER REFERENCE sheet
+  sheet = ss.getSheetByName("CLASS TEACHER REFERENCE");
+  if (!sheet) {
+    sheet = ss.insertSheet("CLASS TEACHER REFERENCE");
+    const headers = ['CLASS', 'SECTION', 'ROOM ASSIGNMENTS', 'TOTAL STUDENTS'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  
+  SpreadsheetApp.getUi().alert('Student Distribution sheets have been set up successfully!');
+}
+/**
+ * Generates the student distribution
+ */
+function generateStudentDistribution() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const classSheet = ss.getSheetByName("CLASS DATA");
+    const roomsSheet = ss.getSheetByName("ROOMS LIST");
+    const settingsSheet = ss.getSheetByName("DISTRIBUTION SETTINGS");
+    const distSheet = ss.getSheetByName("STUDENT DISTRIBUTION");
+    
+    if (!classSheet || !roomsSheet || !settingsSheet || !distSheet) {
+      SpreadsheetApp.getUi().alert('Required sheets not found. Please run "Setup Student Data" first.');
+      return;
+    }
+    
+    // Get settings
+    const settingsData = settingsSheet.getDataRange().getValues();
+    const settings = {};
+    for (let i = 1; i < settingsData.length; i++) {
+      settings[settingsData[i][0]] = settingsData[i][1];
+    }
+    
+    // Get class data
+    const classData = classSheet.getDataRange().getValues();
+    const classes = [];
+    let totalStudents = 0;
+    
+    for (let i = 1; i < classData.length; i++) {
+      if (!classData[i][0]) continue; // Skip empty rows
+      
+      const classInfo = {
+        class: classData[i][0],
+        section: classData[i][1],
+        startRoll: Number(classData[i][2]), // Ensure numbers
+        endRoll: Number(classData[i][3]),   // Ensure numbers
+        total: Number(classData[i][4]) || (Number(classData[i][3]) - Number(classData[i][2]) + 1),
+        notes: classData[i][5] || ''
+      };
+      
+      totalStudents += classInfo.total;
+      classes.push(classInfo);
+    }
+    
+    // Get available rooms
+    const roomsData = roomsSheet.getDataRange().getValues();
+    const rooms = [];
+    let totalCapacity = 0;
+    for (let i = 1; i < roomsData.length; i++) {
+      if (!roomsData[i][0]) continue; // Skip empty rows
+      
+      // Ensure capacity is a number
+      const capacity = parseInt(roomsData[i][1]) || 40; // Default to 40 if not specified or not a number
+      
+      const room = {
+        name: roomsData[i][0],
+        capacity: capacity,
+        notes: roomsData[i][2] || '', // Notes are in column 3 (index 2)
+        assigned: [] // Will hold assigned student groups
+      };
+      
+      totalCapacity += capacity;
+      rooms.push(room);
+      
+      // Debug output
+      console.log(`Added room: ${room.name}, Capacity: ${room.capacity}`);
+    }
+    console.log(`Total capacity: ${totalCapacity}, Total students: ${totalStudents}`);
+    
+    // Check if we have enough capacity
+    if (totalCapacity < totalStudents) {
+      SpreadsheetApp.getUi().alert(`Warning: Total room capacity (${totalCapacity}) is less than total students (${totalStudents}).`);
+    }
+    
+    // Sort classes by size to help with distribution
+    classes.sort((a, b) => b.total - a.total);
+    
+    // Clear the distribution sheet
+    if (distSheet.getLastRow() > 1) {
+      distSheet.getRange(2, 1, distSheet.getLastRow() - 1, distSheet.getLastColumn()).clear();
+    }
+    
+    // Generate distribution based on strategy
+    const distribution = [];
+    
+    if (settings.MIX_STRATEGY === 'STRATIFIED') {
+      // Implement stratified mixing
+      distribution.push(...generateStratifiedDistribution(classes, rooms, settings));
+    } else {
+      // Default to simple distribution
+      distribution.push(...generateSimpleDistribution(classes, rooms, settings));
+    }
+    
+    // Write distribution to sheet
+    if (distribution.length > 0) {
+      distSheet.getRange(2, 1, distribution.length, distribution[0].length).setValues(distribution);
+      
+      // Generate invigilator and class teacher references
+      generateInvigilatorReference(distribution);
+      generateClassTeacherReference(distribution);
+      
+      SpreadsheetApp.getUi().alert('Student distribution generated successfully!');
+    } else {
+      SpreadsheetApp.getUi().alert('Failed to generate distribution. Please check your data and settings.');
+    }
+    
+  } catch (error) {
+    SpreadsheetApp.getUi().alert('Error: ' + error.message);
+    console.error(error);
+  }
+}
+/**
+ * Generates stratified distribution of students across rooms
+ * Works with any school/class system and room naming conventions
+ */
+function generateStratifiedDistribution(classes, rooms, settings) {
+  const distribution = [];
+  const targetPerRoom = settings.TARGET_PER_ROOM || 39;
+  const distributionMode = settings.DISTRIBUTION_MODE || 'HALF_ROLL_SPREAD';
+  
+  // Group classes by main class (IX, X, etc.)
+  const classesByGroup = {};
+  for (const cls of classes) {
+    const mainClass = cls.class;
+    if (!classesByGroup[mainClass]) {
+      classesByGroup[mainClass] = [];
+    }
+    classesByGroup[mainClass].push(cls);
+  }
+  
+  // Get main class groups (IX, X, etc.)
+  const classGroups = Object.keys(classesByGroup);
+  
+  // First, associate rooms with class groups if possible
+  const roomsByGroup = {};
+  const unassociatedRooms = [];
+  
+  for (const room of rooms) {
+    let matched = false;
+    for (const group of classGroups) {
+      // Check if room name starts with the class name
+      if (room.name.startsWith(group) || room.name.startsWith(group + ' ')) {
+        if (!roomsByGroup[group]) {
+          roomsByGroup[group] = [];
+        }
+        roomsByGroup[group].push(room);
+        matched = true;
+        break;
+      }
+    }
+    
+    if (!matched) {
+      unassociatedRooms.push(room);
+    }
+  }
+  
+  // Prepare student assignment tracking
+  const studentAssignments = {};
+  for (const cls of classes) {
+    const key = `${cls.class}-${cls.section}`;
+    
+    // Calculate midpoint for half-distribution
+    const midpoint = Math.floor(cls.startRoll + (cls.total / 2) - 1);
+    
+    studentAssignments[key] = {
+      firstHalfStart: Number(cls.startRoll),  // Ensure numbers
+      firstHalfEnd: Number(midpoint),         // Ensure numbers
+      secondHalfStart: Number(midpoint + 1),  // Ensure numbers
+      secondHalfEnd: Number(cls.endRoll),     // Ensure numbers
+      currentRoll: Number(cls.startRoll),     // Ensure numbers
+      total: Number(cls.total),               // Ensure numbers
+      assigned: 0
+    };
+  }
+  
+  // Different distribution strategies
+  if (distributionMode === 'HALF_ROLL_SPREAD') {
+    // Implement half-roll spread (first half in one set of rooms, second half in another)
+    distributeHalfRollSpread(distribution, classGroups, classesByGroup, roomsByGroup, unassociatedRooms, studentAssignments, targetPerRoom);
+  } else if (distributionMode === 'GROUPS_OF_THREE') {
+    // Implement groups of three sections per room
+    distributeGroupsOfThree(distribution, classGroups, classesByGroup, rooms, studentAssignments, targetPerRoom);
+  } else {
+    // Default to balanced distribution
+    distributeBalanced(distribution, classGroups, classesByGroup, rooms, studentAssignments, targetPerRoom);
+  }
+  
+  // Check for unassigned students and handle them
+  const unassignedStudents = [];
+  for (const key in studentAssignments) {
+    const assignment = studentAssignments[key];
+    if (assignment.assigned < assignment.total) {
+      const [classGroup, section] = key.split('-');
+      unassignedStudents.push({
+        classGroup,
+        section,
+        startRoll: assignment.currentRoll,
+        remaining: assignment.total - assignment.assigned,
+        assignment
+      });
+    }
+  }
+  
+  if (unassignedStudents.length > 0) {
+    // Find rooms with remaining capacity
+    const roomsWithSpace = rooms.map(room => {
+      const assigned = distribution
+        .filter(row => row[0] === room.name)
+        .reduce((sum, row) => sum + row[5], 0);
+      return {
+        room,
+        remainingCapacity: room.capacity - assigned
+      };
+    }).filter(r => r.remainingCapacity > 0)
+      .sort((a, b) => b.remainingCapacity - a.remainingCapacity);
+    
+    // Sort unassigned students by remaining count (descending)
+    unassignedStudents.sort((a, b) => b.remaining - a.remaining);
+    
+    // Distribute remaining students
+    for (const student of unassignedStudents) {
+      let remaining = student.remaining;
+      
+      for (const roomData of roomsWithSpace) {
+        if (roomData.remainingCapacity <= 0 || remaining <= 0) continue;
+        
+        const toAssign = Math.min(remaining, roomData.remainingCapacity);
+        const startRoll = Number(student.assignment.currentRoll); // Ensure number
+        const endRoll = Number(startRoll + toAssign - 1);         // Ensure number
+        
+        // Add to distribution
+        distribution.push([
+          roomData.room.name,
+          roomData.room.capacity,
+          student.classGroup,
+          student.section,
+          formatRollRange(startRoll, endRoll), // Use formatRollRange
+          toAssign,
+          'Overflow'
+        ]);
+        
+        // Update tracking
+        student.assignment.currentRoll = endRoll + 1;
+        student.assignment.assigned += toAssign;
+        roomData.remainingCapacity -= toAssign;
+        remaining -= toAssign;
+        
+        if (remaining <= 0) break;
+      }
+    }
+  }
+  
+  return distribution;
+}
+/**
+ * Distributes students using half-roll spread strategy:
+ * - First half of rolls in one set of rooms
+ * - Second half of rolls in another set of rooms
+ */
+function distributeHalfRollSpread(distribution, classGroups, classesByGroup, roomsByGroup, unassociatedRooms, studentAssignments, targetPerRoom) {
+  // First handle associated rooms (rooms named after class groups)
+  for (const group of classGroups) {
+    const groupRooms = roomsByGroup[group] || [];
+    if (groupRooms.length === 0) continue;
+    
+    // Find matching class in other groups for each room
+    for (let i = 0; i < groupRooms.length; i++) {
+      const room = groupRooms[i];
+      const roomCapacity = Math.min(room.capacity, targetPerRoom);
+      let studentsInRoom = 0;
+      
+      // Get the section for this room based on index
+      const hostSection = i < classesByGroup[group].length ? 
+                         classesByGroup[group][i].section : 
+                         classesByGroup[group][0].section;
+      
+      // For each class group, find a matching section
+      for (const currentGroup of classGroups) {
+        // Skip if room is full
+        if (studentsInRoom >= roomCapacity) break;
+        
+        // Find exact section match if possible, otherwise use the first available
+        let matchingSections = classesByGroup[currentGroup].filter(c => c.section === hostSection);
+        if (matchingSections.length === 0) {
+          matchingSections = [classesByGroup[currentGroup][i % classesByGroup[currentGroup].length]];
+        }
+        
+        for (const matchingClass of matchingSections) {
+          const key = `${matchingClass.class}-${matchingClass.section}`;
+          const assignment = studentAssignments[key];
+          
+          // Calculate how many students to take from this section
+          // For host class rooms, use first half of roll numbers
+          // For guest class rooms, use second half if it's the host class's section
+          let toAssign, startRoll, endRoll;
+          const halfCapacity = Math.floor((roomCapacity - studentsInRoom) / classGroups.length);
+          
+          if (currentGroup === group) {
+            // This is the host class - take from first half
+            const availableInFirstHalf = (assignment.firstHalfEnd - assignment.firstHalfStart + 1) - 
+                                       Math.min(assignment.assigned, assignment.firstHalfEnd - assignment.firstHalfStart + 1);
+            
+            toAssign = Math.min(halfCapacity, availableInFirstHalf);
+            
+            if (toAssign <= 0) continue;
+            
+            startRoll = Number(assignment.firstHalfStart) + Math.min(assignment.assigned, assignment.firstHalfEnd - assignment.firstHalfStart + 1);
+            endRoll = Number(startRoll + toAssign - 1);
+          } else {
+            // For other class groups
+            // Check which rooms we've already dealt with for this section
+            // Try second half first, then first half if needed
+            const secondHalfAssigned = Math.max(0, assignment.assigned - (assignment.firstHalfEnd - assignment.firstHalfStart + 1));
+            const availableInSecondHalf = (assignment.secondHalfEnd - assignment.secondHalfStart + 1) - secondHalfAssigned;
+            
+            if (availableInSecondHalf > 0) {
+              // Take from second half
+              toAssign = Math.min(halfCapacity, availableInSecondHalf);
+              startRoll = Number(assignment.secondHalfStart) + secondHalfAssigned;
+              endRoll = Number(startRoll + toAssign - 1);
+            } else {
+              // Take from first half
+              const firstHalfAssigned = assignment.assigned - secondHalfAssigned;
+              const availableInFirstHalf = (assignment.firstHalfEnd - assignment.firstHalfStart + 1) - firstHalfAssigned;
+              
+              toAssign = Math.min(halfCapacity, availableInFirstHalf);
+              if (toAssign <= 0) continue;
+              
+              startRoll = Number(assignment.firstHalfStart) + firstHalfAssigned;
+              endRoll = Number(startRoll + toAssign - 1);
+            }
+          }
+          
+          // Add to distribution
+          distribution.push([
+            room.name,
+            room.capacity,
+            matchingClass.class,
+            matchingClass.section,
+            formatRollRange(startRoll, endRoll), // Use formatRollRange
+            toAssign,
+            currentGroup === group ? 'Host class' : 'Guest class'
+          ]);
+          
+          // Update tracking
+          assignment.assigned += toAssign;
+          assignment.currentRoll = Math.max(assignment.currentRoll, endRoll + 1);
+          studentsInRoom += toAssign;
+          
+          // Stop if room is full
+          if (studentsInRoom >= roomCapacity) break;
+        }
+      }
+    }
+  }
+  
+  // Handle unassociated rooms (like Library, IT Lab, etc.)
+  distributeToUnassociatedRooms(distribution, classGroups, classesByGroup, unassociatedRooms, studentAssignments, targetPerRoom);
+}
+/**
+ * Distributes students to rooms that don't have a class association
+ */
+function distributeToUnassociatedRooms(distribution, classGroups, classesByGroup, unassociatedRooms, studentAssignments, targetPerRoom) {
+  for (const room of unassociatedRooms) {
+    const roomCapacity = Math.min(room.capacity, targetPerRoom);
+    let studentsInRoom = 0;
+    
+    // Distribute students evenly from all class groups
+    const targetPerGroup = Math.floor(roomCapacity / classGroups.length);
+    
+    for (const group of classGroups) {
+      let assignedFromGroup = 0;
+      
+      // Sort classes by remaining students
+      const classesInGroup = [...classesByGroup[group]].sort((a, b) => {
+        const keyA = `${a.class}-${a.section}`;
+        const keyB = `${b.class}-${b.section}`;
+        
+        const remainingA = a.total - studentAssignments[keyA].assigned;
+        const remainingB = b.total - studentAssignments[keyB].assigned;
+        
+        return remainingB - remainingA;
+      });
+      
+      // Assign students from each section until we hit the target
+      for (const cls of classesInGroup) {
+        if (assignedFromGroup >= targetPerGroup) break;
+        
+        const key = `${cls.class}-${cls.section}`;
+        const assignment = studentAssignments[key];
+        
+        // Calculate how many to assign
+        const remaining = cls.total - assignment.assigned;
+        const toAssign = Math.min(remaining, targetPerGroup - assignedFromGroup);
+        
+        if (toAssign <= 0) continue;
+        
+        // Calculate roll range
+        const startRoll = Number(assignment.currentRoll);
+        const endRoll = Number(startRoll + toAssign - 1);
+        
+        // Add to distribution
+        distribution.push([
+          room.name,
+          room.capacity,
+          cls.class,
+          cls.section,
+          formatRollRange(startRoll, endRoll), // Use formatRollRange
+          toAssign,
+          'Mixed allocation'
+        ]);
+        
+        // Update tracking
+        assignment.assigned += toAssign;
+        assignment.currentRoll = endRoll + 1;
+        assignedFromGroup += toAssign;
+        studentsInRoom += toAssign;
+        
+        // Stop if room is full
+        if (studentsInRoom >= roomCapacity) break;
+      }
+      
+      // Stop if room is full
+      if (studentsInRoom >= roomCapacity) break;
+    }
+  }
+}
+/**
+ * Distributes students in groups of three sections per room
+ */
+function distributeGroupsOfThree(distribution, classGroups, classesByGroup, rooms, studentAssignments, targetPerRoom) {
+  // Sort rooms by capacity
+  const sortedRooms = [...rooms].sort((a, b) => b.capacity - a.capacity);
+  
+  // Flatten all sections
+  let allSections = [];
+  for (const group of classGroups) {
+    for (const cls of classesByGroup[group]) {
+      allSections.push({
+        class: cls.class,
+        section: cls.section,
+        total: cls.total
+      });
+    }
+  }
+  
+  // Sort sections by size
+  allSections.sort((a, b) => b.total - a.total);
+  
+  // Assign sections to rooms in groups of 3
+  for (let i = 0; i < sortedRooms.length; i++) {
+    const room = sortedRooms[i];
+    const roomCapacity = Math.min(room.capacity, targetPerRoom);
+    let studentsInRoom = 0;
+    
+    // Take up to 3 sections for this room
+    const startIdx = i * 3;
+    const endIdx = Math.min(startIdx + 3, allSections.length);
+    const sectionsForRoom = allSections.slice(startIdx, endIdx);
+    
+    if (sectionsForRoom.length === 0) break;
+    
+    // Calculate students per section for this room
+    const studentsPerSection = Math.floor(roomCapacity / sectionsForRoom.length);
+    
+    for (const section of sectionsForRoom) {
+      const key = `${section.class}-${section.section}`;
+      const assignment = studentAssignments[key];
+      
+      // Calculate how many to assign
+      const remaining = section.total - assignment.assigned;
+      const toAssign = Math.min(remaining, studentsPerSection);
+      
+      if (toAssign <= 0) continue;
+      
+      // Calculate roll range
+      const startRoll = Number(assignment.currentRoll);
+      const endRoll = Number(startRoll + toAssign - 1);
+      
+      // Add to distribution
+      distribution.push([
+        room.name,
+        room.capacity,
+        section.class,
+        section.section,
+        formatRollRange(startRoll, endRoll), // Use formatRollRange
+        toAssign,
+        'Group of 3'
+      ]);
+      
+      // Update tracking
+      assignment.assigned += toAssign;
+      assignment.currentRoll = endRoll + 1;
+      studentsInRoom += toAssign;
+      
+      // Stop if room is full
+      if (studentsInRoom >= roomCapacity) break;
+    }
+  }
+}
+/**
+ * Distributes students in a balanced way across all rooms
+ */
+function distributeBalanced(distribution, classGroups, classesByGroup, rooms, studentAssignments, targetPerRoom) {
+  // Sort rooms by capacity
+  const sortedRooms = [...rooms].sort((a, b) => b.capacity - a.capacity);
+  
+  for (const room of sortedRooms) {
+    const roomCapacity = Math.min(room.capacity, targetPerRoom);
+    let studentsInRoom = 0;
+    
+    // Calculate how many students to take from each class group
+    const studentsPerGroup = Math.floor(roomCapacity / classGroups.length);
+    
+    for (const group of classGroups) {
+      let assignedFromGroup = 0;
+      
+      // Sort sections by remaining students
+      const sectionsInGroup = [...classesByGroup[group]].sort((a, b) => {
+        const keyA = `${a.class}-${a.section}`;
+        const keyB = `${b.class}-${b.section}`;
+        
+        const remainingA = a.total - studentAssignments[keyA].assigned;
+        const remainingB = b.total - studentAssignments[keyB].assigned;
+        
+        return remainingB - remainingA;
+      });
+      
+      // Take up to 2 sections from each group
+      const sectionsToUse = sectionsInGroup.slice(0, 2);
+      const perSection = Math.ceil(studentsPerGroup / sectionsToUse.length);
+      
+      for (const section of sectionsToUse) {
+        if (assignedFromGroup >= studentsPerGroup) break;
+        
+        const key = `${section.class}-${section.section}`;
+        const assignment = studentAssignments[key];
+        
+        // Calculate how many to assign
+        const remaining = section.total - assignment.assigned;
+        const toAssign = Math.min(remaining, perSection, studentsPerGroup - assignedFromGroup);
+        
+        if (toAssign <= 0) continue;
+        
+        // Calculate roll range
+        const startRoll = Number(assignment.currentRoll);
+        const endRoll = Number(startRoll + toAssign - 1);
+        
+        // Add to distribution
+        distribution.push([
+          room.name,
+          room.capacity,
+          section.class,
+          section.section,
+          formatRollRange(startRoll, endRoll), // Use formatRollRange
+          toAssign,
+          'Balanced'
+        ]);
+        
+        // Update tracking
+        assignment.assigned += toAssign;
+        assignment.currentRoll = endRoll + 1;
+        assignedFromGroup += toAssign;
+        studentsInRoom += toAssign;
+        
+        // Stop if room is full
+        if (studentsInRoom >= roomCapacity) break;
+      }
+      
+      // Stop if room is full
+      if (studentsInRoom >= roomCapacity) break;
+    }
+  }
+}
+/**
+ * Generates simple distribution by allocating students from the same class/section to rooms
+ */
+function generateSimpleDistribution(classes, rooms, settings) {
+  const distribution = [];
+  const targetPerRoom = settings.TARGET_PER_ROOM || 39;
+  
+  // Sort classes by size and rooms by capacity for better distribution
+  classes.sort((a, b) => b.total - a.total);
+  rooms.sort((a, b) => b.capacity - a.capacity);
+  
+  // Track student assignments
+  const studentAssignments = {};
+  for (const cls of classes) {
+    studentAssignments[`${cls.class}-${cls.section}`] = {
+      startRoll: Number(cls.startRoll),  // Ensure number
+      currentRoll: Number(cls.startRoll), // Ensure number
+      remaining: Number(cls.total)        // Ensure number
+    };
+  }
+  
+  // First pass: try to keep sections together
+  for (const cls of classes) {
+    const key = `${cls.class}-${cls.section}`;
+    const assignment = studentAssignments[key];
+    
+    // Skip if already fully assigned
+    if (assignment.remaining <= 0) continue;
+    
+    // Find a room that can fit this section
+    for (const room of rooms) {
+      // Calculate how many students are already in this room
+      const studentsInRoom = distribution
+        .filter(row => row[0] === room.name)
+        .reduce((sum, row) => sum + row[5], 0);
+      
+      const remainingCapacity = Math.min(room.capacity, targetPerRoom) - studentsInRoom;
+      
+      // Skip if room is full
+      if (remainingCapacity <= 0) continue;
+      
+      // Determine how many students to assign
+      const toAssign = Math.min(assignment.remaining, remainingCapacity);
+      
+      // Calculate roll range
+      const startRoll = Number(assignment.currentRoll);
+      const endRoll = Number(startRoll + toAssign - 1);
+      
+      // Add to distribution
+      distribution.push([
+        room.name,
+        room.capacity,
+        cls.class,
+        cls.section,
+        formatRollRange(startRoll, endRoll), // Use formatRollRange
+        toAssign,
+        ''
+      ]);
+      
+      // Update tracking
+      assignment.currentRoll = endRoll + 1;
+      assignment.remaining -= toAssign;
+      
+      // Stop if section is fully assigned
+      if (assignment.remaining <= 0) break;
+    }
+  }
+  
+  // Second pass: handle any remaining students
+  for (const key in studentAssignments) {
+    const assignment = studentAssignments[key];
+    
+    // Skip if fully assigned
+    if (assignment.remaining <= 0) continue;
+    
+    const [classGroup, section] = key.split('-');
+    
+    // Find rooms with remaining capacity
+    const roomsWithSpace = rooms.map(room => {
+      const assigned = distribution
+        .filter(row => row[0] === room.name)
+        .reduce((sum, row) => sum + row[5], 0);
+      return {
+        room: room,
+        remainingCapacity: Math.min(room.capacity, targetPerRoom) - assigned
+      };
+    }).filter(r => r.remainingCapacity > 0)
+      .sort((a, b) => b.remainingCapacity - a.remainingCapacity);
+    
+    // Distribute remaining students
+    for (const roomData of roomsWithSpace) {
+      // Skip if section is fully assigned or room is full
+      if (assignment.remaining <= 0 || roomData.remainingCapacity <= 0) continue;
+      
+      const toAssign = Math.min(assignment.remaining, roomData.remainingCapacity);
+      
+      // Calculate roll range
+      const startRoll = Number(assignment.currentRoll);
+      const endRoll = Number(startRoll + toAssign - 1);
+      
+      // Add to distribution
+      distribution.push([
+        roomData.room.name,
+        roomData.room.capacity,
+        classGroup,
+        section,
+        formatRollRange(startRoll, endRoll), // Use formatRollRange
+        toAssign,
+        '(overflow)'
+      ]);
+      
+      // Update tracking
+      assignment.currentRoll = endRoll + 1;
+      assignment.remaining -= toAssign;
+      
+      // Stop if section is fully assigned
+      if (assignment.remaining <= 0) break;
+    }
+  }
+  
+  return distribution;
+}
+/**
+ * Generates invigilator reference sheet
+ */
+function generateInvigilatorReference(distribution) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const refSheet = ss.getSheetByName("INVIGILATOR REFERENCE");
+  
+  if (!refSheet) return; // Skip if sheet doesn't exist
+  
+  // Clear existing data
+  if (refSheet.getLastRow() > 1) {
+    refSheet.getRange(2, 1, refSheet.getLastRow() - 1, refSheet.getLastColumn()).clear();
+  }
+  
+  // Group distribution by room
+  const roomData = {};
+  
+  for (const row of distribution) {
+    const roomName = row[0];
+    const className = row[2];
+    const section = row[3];
+    const rollRange = row[4];
+    const count = row[5];
+    
+    if (!roomData[roomName]) {
+      roomData[roomName] = {
+        studentsByClass: [],
+        totalCount: 0
+      };
+    }
+    
+    roomData[roomName].studentsByClass.push(`${className} ${section}: ${rollRange} (${count})`);
+    roomData[roomName].totalCount += count;
+  }
+  
+  // Convert to sheet data
+  const referenceData = [];
+  
+  for (const roomName in roomData) {
+    referenceData.push([
+      roomName,
+      roomData[roomName].studentsByClass.join('\n'),
+      roomData[roomName].totalCount
+    ]);
+  }
+  
+  // Sort by room name
+  referenceData.sort((a, b) => a[0].localeCompare(b[0]));
+  
+  // Write to sheet
+  if (referenceData.length > 0) {
+    refSheet.getRange(2, 1, referenceData.length, referenceData[0].length).setValues(referenceData);
+    
+    // Format the student list column to wrap text
+    refSheet.getRange(2, 2, referenceData.length, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+  }
+}
+/**
+ * Generates class teacher reference sheet
+ */
+function generateClassTeacherReference(distribution) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const refSheet = ss.getSheetByName("CLASS TEACHER REFERENCE");
+  
+  if (!refSheet) return; // Skip if sheet doesn't exist
+  
+  // Clear existing data
+  if (refSheet.getLastRow() > 1) {
+    refSheet.getRange(2, 1, refSheet.getLastRow() - 1, refSheet.getLastColumn()).clear();
+  }
+  
+  // Group distribution by class and section
+  const classData = {};
+  
+  for (const row of distribution) {
+    const roomName = row[0];
+    const className = row[2];
+    const section = row[3];
+    const rollRange = row[4];
+    const count = row[5];
+    
+    const key = `${className}-${section}`;
+    
+    if (!classData[key]) {
+      classData[key] = {
+        class: className,
+        section: section,
+        roomAssignments: [],
+        totalStudents: 0
+      };
+    }
+    
+    classData[key].roomAssignments.push(`${roomName}: ${rollRange} (${count})`);
+    classData[key].totalStudents += count;
+  }
+  
+  // Convert to sheet data
+  const referenceData = [];
+  
+  for (const key in classData) {
+    const data = classData[key];
+    referenceData.push([
+      data.class,
+      data.section,
+      data.roomAssignments.join('\n'),
+      data.totalStudents
+    ]);
+  }
+  
+  // Sort by class and then section
+  referenceData.sort((a, b) => {
+    if (a[0] === b[0]) {
+      return a[1].localeCompare(b[1]);
+    }
+    return a[0].localeCompare(b[0]);
+  });
+  
+  // Write to sheet
+  if (referenceData.length > 0) {
+    refSheet.getRange(2, 1, referenceData.length, referenceData[0].length).setValues(referenceData);
+    
+    // Format the room assignments column to wrap text
+    refSheet.getRange(2, 3, referenceData.length, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+  }
+}
+/**
+ * Generates PDF of invigilator reference
+ */
+function printInvigilatorReference() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const invigilatorSheet = ss.getSheetByName("INVIGILATOR REFERENCE");
+  
+  if (!invigilatorSheet) {
+    SpreadsheetApp.getUi().alert('Invigilator Reference sheet not found. Please generate student distribution first.');
+    return;
+  }
+  
+  // Make sure there's data to print
+  if (invigilatorSheet.getLastRow() <= 1) {
+    SpreadsheetApp.getUi().alert('No data found in Invigilator Reference. Please generate student distribution first.');
+    return;
+  }
+  
+  // Create a temporary sheet for PDF formatting
+  const tempSheet = ss.insertSheet("TEMP_PRINT_SHEET");
+  
+  try {
+    // Copy header and style it
+    tempSheet.getRange(1, 1, 1, 3).setValues([['ROOM', 'STUDENTS BY CLASS', 'TOTAL COUNT']]);
+    tempSheet.getRange(1, 1, 1, 3).setFontWeight('bold');
+    
+    // Set column widths
+    tempSheet.setColumnWidth(1, 150);  // Room column
+    tempSheet.setColumnWidth(2, 350);  // Students by class column
+    tempSheet.setColumnWidth(3, 100);  // Total count column
+    
+    // Copy data
+    const data = invigilatorSheet.getRange(2, 1, invigilatorSheet.getLastRow() - 1, 3).getValues();
+    tempSheet.getRange(2, 1, data.length, data[0].length).setValues(data);
+    
+    // Format text wrapping
+    tempSheet.getRange(2, 2, data.length, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+    
+    // Get sheet ID and create PDF URL
+    const ssId = ss.getId();
+    const sheetId = tempSheet.getSheetId();
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${ssId}/export?format=pdf&gid=${sheetId}` +
+                      "&size=A4&portrait=true&fitw=true&gridlines=false&printtitle=false&sheetnames=false&pagenum=true" +
+                      "&fzr=false&horizontal_alignment=CENTER";
+    
+    // Show dialog with PDF link
+    const html = `
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { color: #1a73e8; }
+        .button-container { margin-top: 20px; }
+        .button { 
+          background-color: #1a73e8; color: white; 
+          padding: 10px 15px; border: none; border-radius: 4px;
+          cursor: pointer; font-size: 14px; font-weight: bold;
+          text-decoration: none;
+        }
+      </style>
+      <h2>Invigilator Reference Ready</h2>
+      <p>Your Invigilator Reference PDF is ready. Click the button below to open it.</p>
+      <div class="button-container">
+        <a class="button" href="${exportUrl}" target="_blank">Open PDF</a>
+      </div>
+      <p style="margin-top: 20px;">Note: Log in with your Google account if prompted, then use your browser's print function to save or print the PDF.</p>
+    `;
+    
+    const htmlOutput = HtmlService.createHtmlOutput(html)
+      .setWidth(450)
+      .setHeight(300);
+      
+    SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Invigilator Reference PDF');
+    
+  } catch (error) {
+    SpreadsheetApp.getUi().alert('Error generating PDF: ' + error.message);
+  } finally {
+    // Delete temporary sheet
+    ss.deleteSheet(tempSheet);
+  }
+}
+/**
+ * Generates PDF of class teacher reference
+ */
+function printClassTeacherReference() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const teacherSheet = ss.getSheetByName("CLASS TEACHER REFERENCE");
+  
+  if (!teacherSheet) {
+    SpreadsheetApp.getUi().alert('Class Teacher Reference sheet not found. Please generate student distribution first.');
+    return;
+  }
+  
+  // Make sure there's data to print
+  if (teacherSheet.getLastRow() <= 1) {
+    SpreadsheetApp.getUi().alert('No data found in Class Teacher Reference. Please generate student distribution first.');
+    return;
+  }
+  
+  // Create a temporary sheet for PDF formatting
+  const tempSheet = ss.insertSheet("TEMP_PRINT_SHEET");
+  
+  try {
+    // Copy header and style it
+    tempSheet.getRange(1, 1, 1, 4).setValues([['CLASS', 'SECTION', 'ROOM ASSIGNMENTS', 'TOTAL STUDENTS']]);
+    tempSheet.getRange(1, 1, 1, 4).setFontWeight('bold');
+    
+    // Set column widths
+    tempSheet.setColumnWidth(1, 100);  // Class column
+    tempSheet.setColumnWidth(2, 100);  // Section column
+    tempSheet.setColumnWidth(3, 350);  // Room assignments column
+    tempSheet.setColumnWidth(4, 100);  // Total students column
+    
+    // Copy data
+    const data = teacherSheet.getRange(2, 1, teacherSheet.getLastRow() - 1, 4).getValues();
+    tempSheet.getRange(2, 1, data.length, data[0].length).setValues(data);
+    
+    // Format text wrapping
+    tempSheet.getRange(2, 3, data.length, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+    
+    // Get sheet ID and create PDF URL
+    const ssId = ss.getId();
+    const sheetId = tempSheet.getSheetId();
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${ssId}/export?format=pdf&gid=${sheetId}` +
+                      "&size=A4&portrait=true&fitw=true&gridlines=false&printtitle=false&sheetnames=false&pagenum=true" +
+                      "&fzr=false&horizontal_alignment=CENTER";
+    
+    // Show dialog with PDF link
+    const html = `
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { color: #1a73e8; }
+        .button-container { margin-top: 20px; }
+        .button { 
+          background-color: #1a73e8; color: white; 
+          padding: 10px 15px; border: none; border-radius: 4px;
+          cursor: pointer; font-size: 14px; font-weight: bold;
+          text-decoration: none;
+        }
+      </style>
+      <h2>Class Teacher Reference Ready</h2>
+      <p>Your Class Teacher Reference PDF is ready. Click the button below to open it.</p>
+      <div class="button-container">
+        <a class="button" href="${exportUrl}" target="_blank">Open PDF</a>
+      </div>
+      <p style="margin-top: 20px;">Note: Log in with your Google account if prompted, then use your browser's print function to save or print the PDF.</p>
+    `;
+    
+    const htmlOutput = HtmlService.createHtmlOutput(html)
+      .setWidth(450)
+      .setHeight(300);
+      
+    SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Class Teacher Reference PDF');
+    
+  } catch (error) {
+    SpreadsheetApp.getUi().alert('Error generating PDF: ' + error.message);
+  } finally {
+    // Delete temporary sheet
+    ss.deleteSheet(tempSheet);
+  }
+}
+/**
+ * Shows information about the system
+ */
+function showAbout() {
+  const html = HtmlService.createHtmlOutput(`
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      h2 { color: #1a73e8; }
+      .section { margin-bottom: 15px; }
+      .features { margin-left: 20px; padding-left: 0; }
+      .features li { margin-bottom: 5px; list-style-type: none; }
+      .features li:before { content: "• "; color: #1a73e8; }
+    </style>
+    <h2>School Management System</h2>
+    <div class="section">
+      <p><strong>Version:</strong> 1.0</p>
+      <p><strong>Last Updated:</strong> May 2025</p>
+    </div>
+    <div class="section">
+      <p><strong>Features:</strong></p>
+      <ul class="features">
+        <li>Automated timetable generation</li>
+        <li>Teacher invigilation duty allocation</li>
+        <li>Student distribution for exams</li>
+        <li>Customizable settings and configurations</li>
+      </ul>
+    </div>
+    <div class="section">
+      <p>For questions or support, please contact your system administrator.</p>
+    </div>
+  `)
+  .setWidth(450)
+  .setHeight(300);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'About School Management System');
+}
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    
+    switch(action) {
+      case 'getData':
+        // This will work for any module - just returns sample data
+        return ContentService.createTextOutput(JSON.stringify({success: true, data: "SmartGenEduX Connected!"}))
+          .setMimeType(ContentService.MimeType.JSON);
+      default:
+        return ContentService.createTextOutput(JSON.stringify({error: 'Unknown action'}))
+          .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+function doGet(e) {
+  const action = e.parameter.action;
+  
+  switch(action) {
+    case 'getSeatingArrangements':
+      return ContentService.createTextOutput(JSON.stringify(getSeatingArrangements()))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'generateSeating':
+      const examId = e.parameter.examId;
+      const roomCapacity = e.parameter.roomCapacity;
+      return ContentService.createTextOutput(JSON.stringify(generateSeatingArrangement(examId, roomCapacity)))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'getStudentSeating':
+      const studentId = e.parameter.studentId;
+      return ContentService.createTextOutput(JSON.stringify(getStudentSeating(studentId)))
+        .setMimeType(ContentService.MimeType.JSON);
+    default:
+      return ContentService.createTextOutput('{"error": "Invalid action"}')
+        .setMimeType(ContentService.MimeType.JSON);
+  }
+}

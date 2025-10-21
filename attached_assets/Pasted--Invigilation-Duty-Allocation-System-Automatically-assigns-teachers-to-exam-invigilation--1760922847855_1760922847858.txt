@@ -1,0 +1,594 @@
+/**
+ * Invigilation Duty Allocation System
+ * Automatically assigns teachers to exam invigilation duties
+ * based on exam schedule and teacher subjects.
+ /**
+ * Creates the menu when the spreadsheet is opened
+ */
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  const menu = ui.createMenu('Exam Management')
+    .addItem('Setup Sheets', 'setupSheets')
+    .addItem('Generate Duty Allocation', 'generateDutyAllocation')
+    .addItem('Mark Teacher as Sick/On-Leave', 'markTeacherStatus')
+    .addItem('Print Duty Chart', 'printDutyChart')
+    .addSeparator()
+    .addSubMenu(ui.createMenu('Student Distribution')
+      .addItem('Setup Student Data', 'setupStudentDistribution')
+      .addItem('Generate Distribution', 'generateStudentDistribution')
+      .addItem('Print Invigilator Reference', 'printInvigilatorReference')
+      .addItem('Print Class Teacher Reference', 'printClassTeacherReference'))
+    .addSeparator()
+    .addItem('About', 'showAbout');
+    menu.addToUi();}
+/**
+ * Sets up the necessary sheets for the system
+ */
+function setupSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Create TEACHERS' LIST sheet
+  let sheet = ss.getSheetByName("TEACHERS' LIST");
+  if (!sheet) {
+    sheet = ss.insertSheet("TEACHERS' LIST");
+    const teachersHeaders = ['SLN', 'TEACHER NAME', 'SUBJECT', 'STATUS', 'DUTY FACTOR'];
+    sheet.getRange(1, 1, 1, teachersHeaders.length).setValues([teachersHeaders]).setFontWeight('bold');
+    
+    // Create data validation for STATUS column
+    const statusRange = sheet.getRange("D2:D1000");
+    const statusRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['ACTIVE', 'SICK', 'ON-LEAVE'], true)
+      .build();
+    statusRange.setDataValidation(statusRule);
+    
+    // Set default values
+    sheet.getRange("D2:D1000").setValue("ACTIVE");
+    sheet.getRange("E2:E1000").setValue(1);
+    
+    sheet.setFrozenRows(1);
+  }
+  
+  // Create EXAM SCHEDULE sheet
+  sheet = ss.getSheetByName("EXAM SCHEDULE");
+  if (!sheet) {
+    sheet = ss.insertSheet("EXAM SCHEDULE");
+    const scheduleHeaders = ['DAY', 'DATE', 'SUBJECT', 'GRADE', 'ROOMS AVAILABLE'];
+    sheet.getRange(1, 1, 1, scheduleHeaders.length).setValues([scheduleHeaders]).setFontWeight('bold');
+    
+    // Add a helpful note about rooms format
+    sheet.getRange(2, 5).setValue("Enter as comma-separated list: IX A1, IX A2, Library, etc.");
+    sheet.getRange(2, 5).setNote("List each room separated by commas: 'IX A1, IX A2, Library, IT Lab'");
+    
+    sheet.setFrozenRows(1);
+  }
+  
+  // Create ROOMS LIST sheet for managing all available rooms
+  sheet = ss.getSheetByName("ROOMS LIST");
+  if (!sheet) {
+    sheet = ss.insertSheet("ROOMS LIST");
+    const roomsHeaders = ['ROOM NAME', 'CAPACITY', 'NOTES'];
+    sheet.getRange(1, 1, 1, roomsHeaders.length).setValues([roomsHeaders]).setFontWeight('bold');
+    
+    // Add some example rooms
+    const exampleRooms = [
+      ['IX A1', 40, 'Ground floor'],
+      ['IX A2', 40, ''],
+      ['X A1', 40, ''],
+      ['X A2', 40, ''],
+      ['Library', 60, 'Larger space'],
+      ['IT Lab', 30, 'Computer lab'],
+      ['Terrace 1', 40, 'Open air'],
+      ['Terrace 2', 40, 'Open air']
+    ];
+    
+    sheet.getRange(2, 1, exampleRooms.length, 3).setValues(exampleRooms);
+    sheet.setFrozenRows(1);
+  }
+  
+  // Create DUTY ALLOCATION sheet
+  sheet = ss.getSheetByName("DUTY ALLOCATION");
+  if (!sheet) {
+    sheet = ss.insertSheet("DUTY ALLOCATION");
+    const dutyHeaders = ['SLN', 'TEACHER NAME', 'TDA'];
+    sheet.getRange(1, 1, 1, dutyHeaders.length).setValues([dutyHeaders]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+    sheet.setFrozenColumns(2);
+  }
+  
+  // Create EXEMPTION RECORD sheet to track which exams teachers are exempted from
+  sheet = ss.getSheetByName("EXEMPTION RECORD");
+  if (!sheet) {
+    sheet = ss.insertSheet("EXEMPTION RECORD");
+    const exemptionHeaders = ['TEACHER NAME', 'SUBJECT', 'EXEMPTED EXAM DATE', 'GRADE'];
+    sheet.getRange(1, 1, 1, exemptionHeaders.length).setValues([exemptionHeaders]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  
+  SpreadsheetApp.getUi().alert('Sheets have been set up successfully!');
+}
+/**
+ * Allows marking a teacher as sick or on-leave
+ */
+function markTeacherStatus() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const teachersSheet = ss.getSheetByName("TEACHERS' LIST");
+  
+  if (!teachersSheet || teachersSheet.getLastRow() <= 1) {
+    SpreadsheetApp.getUi().alert('No teachers found. Please add teachers to the TEACHERS\' LIST first.');
+    return;
+  }
+  
+  const teacherData = teachersSheet.getRange(2, 2, teachersSheet.getLastRow() - 1, 1).getValues();
+  const teacherNames = teacherData.map(row => row[0]).filter(name => name);
+  
+  // Create UI for marking teacher status
+  const html = HtmlService.createHtmlOutput(`
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      select, input, button { margin: 10px 0; padding: 8px; width: 100%; }
+      .form-group { margin-bottom: 15px; }
+      label { display: block; margin-bottom: 5px; font-weight: bold; }
+    </style>
+    <h2>Update Teacher Status</h2>
+    <div class="form-group">
+      <label for="teacher">Select Teacher:</label>
+      <select id="teacher">
+        ${teacherNames.map(name => `<option value="${name}">${name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="status">Status:</label>
+      <select id="status">
+        <option value="ACTIVE">ACTIVE (Full Duties)</option>
+        <option value="SICK">SICK (Reduced Duties)</option>
+        <option value="ON-LEAVE">ON-LEAVE (No Duties)</option>
+      </select>
+    </div>
+    <div class="form-group" id="dutyFactorGroup">
+      <label for="dutyFactor">Duty Factor (0 = No duties, 0.5 = Half duties, 1 = Full duties):</label>
+      <input type="number" id="dutyFactor" min="0" max="1" step="0.1" value="1">
+    </div>
+    <button onclick="submitForm()">Update Status</button>
+    
+    <script>
+      // Show/hide duty factor based on status
+      document.getElementById('status').addEventListener('change', function() {
+        const dutyFactorGroup = document.getElementById('dutyFactorGroup');
+        const dutyFactorInput = document.getElementById('dutyFactor');
+        
+        if (this.value === 'ACTIVE') {
+          dutyFactorGroup.style.display = 'block';
+          dutyFactorInput.value = '1';
+        } else if (this.value === 'SICK') {
+          dutyFactorGroup.style.display = 'block';
+          dutyFactorInput.value = '0.5';
+        } else if (this.value === 'ON-LEAVE') {
+          dutyFactorGroup.style.display = 'block';
+          dutyFactorInput.value = '0';
+        }
+      });
+      
+      function submitForm() {
+        const teacher = document.getElementById('teacher').value;
+        const status = document.getElementById('status').value;
+        const dutyFactor = document.getElementById('dutyFactor').value;
+        
+        google.script.run
+          .withSuccessHandler(function() {
+            google.script.host.close();
+          })
+          .updateTeacherStatus(teacher, status, dutyFactor);
+      }
+    </script>
+  `)
+  .setWidth(400)
+  .setHeight(350);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'Update Teacher Status');
+}
+/**
+ * Updates a teacher's status and duty factor
+ */
+function updateTeacherStatus(teacherName, status, dutyFactor) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const teachersSheet = ss.getSheetByName("TEACHERS' LIST");
+  
+  // Find the teacher row
+  const teacherData = teachersSheet.getDataRange().getValues();
+  for (let i = 1; i < teacherData.length; i++) {
+    if (teacherData[i][1] === teacherName) {
+      teachersSheet.getRange(i + 1, 4).setValue(status);
+      teachersSheet.getRange(i + 1, 5).setValue(Number(dutyFactor));
+      break;
+    }
+  }
+  
+  SpreadsheetApp.getUi().alert(`Updated ${teacherName}'s status to ${status} with duty factor ${dutyFactor}.`);
+}
+/**
+ * Generates the duty allocation
+ */
+function generateDutyAllocation() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const teachersSheet = ss.getSheetByName("TEACHERS' LIST");
+    const scheduleSheet = ss.getSheetByName("EXAM SCHEDULE");
+    const dutySheet = ss.getSheetByName("DUTY ALLOCATION");
+    const exemptionSheet = ss.getSheetByName("EXEMPTION RECORD");
+    
+    // Check if sheets exist
+    if (!teachersSheet || !scheduleSheet || !dutySheet || !exemptionSheet) {
+      SpreadsheetApp.getUi().alert('Error: One or more required sheets are missing. Please run "Setup Sheets" first.');
+      return;
+    }
+    
+    // Get teacher data
+    const teacherData = teachersSheet.getDataRange().getValues();
+    if (teacherData.length <= 1) {
+      SpreadsheetApp.getUi().alert('Error: No teachers found in TEACHERS\' LIST. Please add teachers first.');
+      return;
+    }
+    
+    // Get exam schedule data
+    const scheduleData = scheduleSheet.getDataRange().getValues();
+    if (scheduleData.length <= 1) {
+      SpreadsheetApp.getUi().alert('Error: No exams found in EXAM SCHEDULE. Please add exam dates first.');
+      return;
+    }
+    
+    // Clear the exemption record
+    if (exemptionSheet.getLastRow() > 1) {
+      exemptionSheet.getRange(2, 1, exemptionSheet.getLastRow() - 1, 4).clear();
+    }
+    
+    // Extract unique dates and room information
+    const examDates = [];
+    const dateToExams = {};
+    const dateToRooms = {};
+    
+    for (let i = 1; i < scheduleData.length; i++) {
+      const date = scheduleData[i][1]; // DATE column
+      if (!date) continue;
+      
+      let dateStr;
+      if (typeof date === 'object' && date.getMonth) {
+        // It's a date object
+        dateStr = Utilities.formatDate(date, Session.getScriptTimeZone(), "dd.MM.yy");
+      } else {
+        // It's already a string or something else
+        dateStr = String(date);
+      }
+      
+      const subject = scheduleData[i][2]; // SUBJECT column
+      const grade = scheduleData[i][3];   // GRADE column
+      const roomsText = scheduleData[i][4]; // ROOMS AVAILABLE column
+      
+      // Add date if not already in array
+      if (examDates.indexOf(dateStr) === -1) {
+        examDates.push(dateStr);
+      }
+      
+      // Initialize arrays for this date if not already done
+      if (!dateToExams[dateStr]) {
+        dateToExams[dateStr] = [];
+        dateToRooms[dateStr] = [];
+      }
+      
+      // Add exam info
+      dateToExams[dateStr].push({
+        subject: subject,
+        grade: grade
+      });
+      
+      // Parse rooms - handle both comma and space separated lists
+      if (roomsText) {
+        let rooms = [];
+        if (roomsText.includes(',')) {
+          // Comma-separated
+          rooms = roomsText.split(',').map(r => r.trim()).filter(r => r);
+        } else {
+          // Space-separated
+          rooms = roomsText.split(/\s+/).filter(r => r);
+        }
+        dateToRooms[dateStr] = dateToRooms[dateStr].concat(rooms);
+      }
+    }
+    
+    // Sort dates
+    examDates.sort();
+    
+    // Process teachers
+    const teachers = [];
+    for (let i = 1; i < teacherData.length; i++) {
+      if (!teacherData[i][1]) continue; // Skip empty rows
+      
+      teachers.push({
+        sln: teacherData[i][0],
+        name: teacherData[i][1],
+        subject: teacherData[i][2],
+        status: teacherData[i][3] || 'ACTIVE',
+        dutyFactor: teacherData[i][4] || 1,
+        alreadyExempted: false,
+        assignedDates: [],
+        totalDuties: 0
+      });
+    }
+    
+    // First pass: Exempt teachers from one subject exam
+    for (const teacher of teachers) {
+      const teacherSubject = (teacher.subject || '').toLowerCase().trim();
+      if (!teacherSubject) continue;
+      
+      let exemptionApplied = false;
+      
+      // Find exams for this subject
+      for (const date of examDates) {
+        if (exemptionApplied) break;
+        
+        const exams = dateToExams[date] || [];
+        for (const exam of exams) {
+          const examSubject = (exam.subject || '').toLowerCase().trim();
+          if (!examSubject) continue;
+          
+          if (examSubject === teacherSubject && !exemptionApplied) {
+            // Mark teacher as exempt for this date
+            teacher.exempt = teacher.exempt || {};
+            teacher.exempt[date] = true;
+            exemptionApplied = true;
+            
+            // Record exemption
+            const exemptionData = [[teacher.name, teacher.subject, date, exam.grade]];
+            const nextRow = exemptionSheet.getLastRow() + 1;
+            exemptionSheet.getRange(nextRow, 1, 1, 4).setValues(exemptionData);
+            break;
+          }
+        }
+      }
+    }
+    
+    // Second pass: Allocate duties
+    for (const date of examDates) {
+      const rooms = dateToRooms[date] || [];
+      
+      // Sort teachers by exemption and duties
+      const sortedTeachers = [...teachers].sort((a, b) => {
+        // Exempt teachers come last
+        const aExempt = a.exempt && a.exempt[date];
+        const bExempt = b.exempt && b.exempt[date];
+        
+        if (aExempt && !bExempt) return 1;
+        if (!aExempt && bExempt) return -1;
+        
+        // ON-LEAVE teachers come last
+        if (a.status === 'ON-LEAVE' && b.status !== 'ON-LEAVE') return 1;
+        if (a.status !== 'ON-LEAVE' && b.status === 'ON-LEAVE') return -1;
+        
+        // Sort by total duties
+        return a.totalDuties - b.totalDuties;
+      });
+      
+      // Assign rooms
+      let roomIndex = 0;
+      for (let i = 0; i < sortedTeachers.length && roomIndex < rooms.length; i++) {
+        const teacher = sortedTeachers[i];
+        
+        // Skip exempt or on-leave teachers
+        if ((teacher.exempt && teacher.exempt[date]) || teacher.status === 'ON-LEAVE') {
+          continue;
+        }
+        
+        // Assign room
+        const room = rooms[roomIndex];
+        teacher.assignedDates.push({
+          date: date,
+          room: room
+        });
+        teacher.totalDuties++;
+        roomIndex++;
+      }
+    }
+    
+    // Create final duty allocation sheet
+    // Headers with date columns
+    const headers = ['SLN', 'TEACHER NAME'];
+    for (const date of examDates) {
+      headers.push(date);
+    }
+    headers.push('TDA');
+    
+    // Create data rows
+    const rows = [];
+    for (const teacher of teachers) {
+      const row = [teacher.sln, teacher.name];
+      
+      // Add room for each date or empty string if none
+      for (const date of examDates) {
+        const dutyForDate = teacher.assignedDates.find(d => d.date === date);
+        row.push(dutyForDate ? dutyForDate.room : '');
+      }
+      
+      // Add total duties
+      row.push(teacher.totalDuties);
+      
+      rows.push(row);
+    }
+    
+    // Sort rows by SLN
+    rows.sort((a, b) => Number(a[0]) - Number(b[0]));
+    
+    // Write to sheet
+    dutySheet.clear();
+    dutySheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    
+    if (rows.length > 0) {
+      dutySheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+    }
+    
+    // Format sheet
+    dutySheet.setFrozenRows(1);
+    dutySheet.setFrozenColumns(2);
+    
+    // Auto-resize columns
+    for (let i = 1; i <= headers.length; i++) {
+      dutySheet.autoResizeColumn(i);
+    }
+    
+    SpreadsheetApp.getUi().alert('Duty allocation completed successfully!');
+    
+  } catch (error) {
+    SpreadsheetApp.getUi().alert('Error: ' + error.message);
+  }
+}
+/**
+ * Helper function to shuffle an array
+ */
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+/**
+ * Creates a printable view of the duty chart
+ */
+function printDutyChart() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dutySheet = ss.getSheetByName("DUTY ALLOCATION");
+  
+  if (!dutySheet || dutySheet.getLastRow() <= 1) {
+    SpreadsheetApp.getUi().alert('No duty allocation data found. Please generate duty allocation first.');
+    return;
+  }
+  
+  // Get data
+  const data = dutySheet.getDataRange().getValues();
+  const headers = data[0];
+  
+  // Create HTML for printing
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th { background-color: #f2f2f2; padding: 8px; text-align: center; border: 1px solid #ddd; }
+        td { padding: 8px; text-align: center; border: 1px solid #ddd; }
+        .print-button { text-align: center; margin-bottom: 20px; }
+        @media print {
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="no-print print-button">
+        <button onclick="window.print()">Print Duty Chart</button>
+      </div>
+      <h1>Invigilation Duty Chart</h1>
+      <table>
+        <tr>`;
+  
+  // Add headers
+  for (const header of headers) {
+    html += `<th>${header}</th>`;
+  }
+  html += `</tr>`;
+  
+  // Add data rows
+  for (let i = 1; i < data.length; i++) {
+    html += `<tr>`;
+    for (let j = 0; j < data[i].length; j++) {
+      html += `<td>${data[i][j]}</td>`;
+    }
+    html += `</tr>`;
+  }
+  
+  html += `
+      </table>
+    </body>
+    </html>`;
+  
+  // Show HTML in a dialog
+  const htmlOutput = HtmlService
+    .createHtmlOutput(html)
+    .setWidth(800)
+    .setHeight(600);
+  
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Invigilation Duty Chart');
+}
+/**
+ * Shows information about the system
+ */
+function showAbout() {
+  const htmlOutput = HtmlService
+    .createHtmlOutput(`
+      <h2>Invigilation Duty Allocation System</h2>
+      <p>This system helps examination committees efficiently allocate invigilation duties to teachers.</p>
+      
+      <h3>Features:</h3>
+      <ul>
+        <li>Automatically assigns teachers to exam supervision duties</li>
+        <li>Ensures teachers get one exemption for their subject exam</li>
+        <li>Handles sick teachers with reduced duty loads</li>
+        <li>Teachers on leave can be marked with no duties</li>
+        <li>Balances workload among teachers based on their availability</li>
+        <li>Generates printable duty charts</li>
+      </ul>
+      
+      <h3>How to Use:</h3>
+      <ol>
+        <li>Run "Setup Sheets" to create the necessary structure</li>
+        <li>Enter teacher information in the TEACHERS' LIST sheet</li>
+        <li>Add exam details in the EXAM SCHEDULE sheet</li>
+        <li>Mark any teachers as sick or on leave using the menu option</li>
+        <li>Click "Generate Duty Allocation" to create the assignments</li>
+        <li>Use "Print Duty Chart" to print or save the final schedule</li>
+      </ol>
+      
+      <p><small>Version 1.0</small></p>
+    `)
+    .setWidth(500)
+    .setHeight(400);
+  
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'About Invigilation System');}
+  function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    
+    switch(action) {
+      case 'getData':
+        // This will work for any module - just returns sample data
+        return ContentService.createTextOutput(JSON.stringify({success: true, data: "SmartGenEduX Connected!"}))
+          .setMimeType(ContentService.MimeType.JSON);
+      default:
+        return ContentService.createTextOutput(JSON.stringify({error: 'Unknown action'}))
+          .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+function doGet(e) {
+  const action = e.parameter.action;
+  
+  switch(action) {
+    case 'getInvigilationDuties':
+      return ContentService.createTextOutput(JSON.stringify(getInvigilationDuties()))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'generateInvigilation':
+      const examId = e.parameter.examId;
+      return ContentService.createTextOutput(JSON.stringify(generateInvigilationSchedule(examId)))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'getTeacherSchedule':
+      const teacherId = e.parameter.teacherId;
+      return ContentService.createTextOutput(JSON.stringify(getTeacherSchedule(teacherId)))
+        .setMimeType(ContentService.MimeType.JSON);
+    default:
+      return ContentService.createTextOutput('{"error": "Invalid action"}')
+        .setMimeType(ContentService.MimeType.JSON);
+  }
+}

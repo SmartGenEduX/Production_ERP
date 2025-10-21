@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SmartGenEduX - Educational Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Your existing styles: circuit-pattern, glass-effect, animations, etc. */
+        body {
+            box-sizing: border-box;
+        }
+        .circuit-pattern {
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+        }
+        .circuit-overlay::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .glass-effect {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-full bg-slate-900 text-white circuit-pattern relative overflow-x-hidden">
+
+    <!-- Animated Background Blobs -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 blob-shape animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 blob-shape animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-indigo-500 blob-shape animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+
+    <!-- Circuit Overlay -->
+    <div class="circuit-overlay fixed inset-0 pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="relative z-10 glass-effect border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <!-- Replace this svg with your logo SVG file if you have one -->
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+                            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            SmartGenEduX
+                        </h1>
+                        <p class="text-xs text-slate-400">Next-Gen Education Platform</p>
+                    </div>
+                </div>
+
+                <!-- User Status & Auth Buttons -->
+                <div class="flex items-center space-x-4">
+                    <div id="sessionInfo" class="hidden text-xs text-slate-400"></div>
+
+                    <div id="userStatus" class="hidden items-center space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg" id="userAvatar"></div>
+                        <div class="text-sm">
+                            <p class="font-medium">Welcome, <span id="userName"></span></p>
+                            <p class="text-slate-400 text-xs" id="userRoleText"></p>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button id="helpBtn" class="px-3 py-1 text-sm bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-all duration-200 hover:scale-105">
+                            Help
+                        </button>
+                        <button id="authBtn" class="px-4 py-1 text-sm bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg">
+                            Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-10 min-h-full flex items-center justify-center px-4 py-12">
+        <div class="max-w-lg w-full space-y-6">
+            <!-- Notification Area -->
+            <div id="notificationArea" class="hidden">
+                <div id="notification" class="glass-effect rounded-xl p-4 border-l-4 fade-in">
+                    <div class="flex items-center">
+                        <div id="notificationIcon" class="flex-shrink-0 w-5 h-5 mr-3"></div>
+                        <div class="flex-1">
+                            <p id="notificationTitle" class="font-medium"></p>
+                            <p id="notificationMessage" class="text-sm text-slate-300 mt-1"></p>
+                        </div>
+                        <button onclick="hideNotification()" class="ml-2 text-slate-400 hover:text-white" aria-label="Close notification">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center">
+                <div class="glass-effect rounded-2xl p-8 pulse-glow">
+                    <div class="flex flex-col items-center space-y-6">
+                        <div class="relative">
+                            <div class="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full loading-spinner"></div>
+                            <div class="absolute inset-0 w-16 h-16 border-4 border-purple-500/20 border-b-purple-500 rounded-full loading-spinner" style="animation-delay: 0.5s; animation-direction: reverse;"></div>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                                Initializing SmartGenEduX
+                            </h2>
+                            <p class="text-slate-400" id="loadingMessage">Establishing secure connection...</p>
+                        </div>
+                        <div class="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
+                            <div id="progressBar" class="progress-shimmer h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div id="securityInfo" class="text-xs text-slate-500 text-center space-y-1" aria-live="polite" aria-atomic="true">
+                            <p>🔒 256-bit SSL Encryption Active</p>
+                            <p>🛡️ Multi-Factor Authentication Ready</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Denied State -->
+            <div id="accessDeniedState" class="hidden text-center">
+                <div class="glass-effect rounded-2xl p-8 border-red-500/30 scale-in">
+                    <div class="flex flex-col items-center space-y-6">
+                        <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center relative">
+                            <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-5V9m0 0V7m0 2h2m-2 0H10M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="absolute inset-0 border-2 border-red-400/30 rounded-full animate-ping"></div>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-semibold mb-2 text-red-400">Access Denied</h2>
+                            <p class="text-slate-400 mb-2">Authentication required to continue</p>
+                            <p class="text-sm text-slate-500">Please log in with your SmartGenEduX credentials</p>
+                        </div>
+                        <div class="space-y-3 w-full">
+                            <button onclick="showLogin()" class="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg">
+                                Login to Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Redirect State -->
+            <div id="dashboardRedirectState" class="hidden text-center">
+                <div class="glass-effect rounded-2xl p-8 border-green-500/30 scale-in">
+                    <div class="flex flex-col items-center space-y-6">
+                        <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center relative">
+                            <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="absolute inset-0 border-2 border-green-400/30 rounded-full animate-ping"></div>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-semibold mb-2 text-green-400">Welcome Back!</h2>
+                            <p class="text-slate-400 mb-2">Authentication successful</p>
+                            <p class="text-sm text-slate-500">Preparing your personalized dashboard...</p>
+                        </div>
+                        <div class="flex items-center space-x-2 text-sm text-slate-300" id="recentActivityPreview">
+                            <!-- Recent activity dynamically inserted here -->
+                        </div>
+                        <div class="flex items-center space-x-2 text-sm text-slate-300 mt-2">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            <span id="redirectMessage">Redirecting to dashboard...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 glass-effect border-t border-slate-700/50 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+                <div class="text-sm text-slate-400">
+                    © 2024 SmartGenEduX. All rights reserved.
+                </div>
+                <div class="text-sm text-slate-400">
+                    Powered by <span class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent font-medium">SmartGenEduX</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+
+    <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://waqttehjaifdkcbovund.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhcXR0ZWhqYWlmZGtjYm92dW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Mjk1ODIsImV4cCI6MjA2NTIwNTU4Mn0.nv1_UIuXl-wSfkfTMvwCUsJTGO65TwZ2D8a571ELKJ0';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // DOM elements
+        const userStatus = document.getElementById('userStatus');
+        const userNameEl = document.getElementById('userName');
+        const userRoleEl = document.getElementById('userRoleText');
+        const userAvatar = document.getElementById('userAvatar');
+        const sessionInfo = document.getElementById('sessionInfo');
+        const authBtn = document.getElementById('authBtn');
+        const loadingState = document.getElementById('loadingState');
+        const accessDeniedState = document.getElementById('accessDeniedState');
+        const dashboardRedirectState = document.getElementById('dashboardRedirectState');
+        const notificationArea = document.getElementById('notificationArea');
+        const notification = document.getElementById('notification');
+        const notificationIcon = document.getElementById('notificationIcon');
+        const notificationTitle = document.getElementById('notificationTitle');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const recentActivityPreview = document.getElementById('recentActivityPreview');
+        const redirectMessage = document.getElementById('redirectMessage');
+
+        // UI reset function
+        function resetUI() {
+            userStatus.classList.add('hidden');
+            sessionInfo.classList.add('hidden');
+            authBtn.textContent = 'Login';
+            authBtn.classList.remove('bg-red-500/80');
+            authBtn.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-purple-600');
+            loadingState.classList.remove('hidden');
+            accessDeniedState.classList.add('hidden');
+            dashboardRedirectState.classList.add('hidden');
+            notificationArea.classList.add('hidden');
+            recentActivityPreview.innerHTML = '';
+            redirectMessage.textContent = 'Redirecting to dashboard...';
+        }
+
+        // Show notification helper
+        function showNotification(type, title, message) {
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            notificationArea.classList.remove('hidden');
+
+            if (type === 'success') {
+                notification.className = 'glass-effect rounded-xl p-4 border-l-4 border-green-500 fade-in';
+                notificationIcon.innerHTML = `<svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>`;
+            } else if (type === 'error') {
+                notification.className = 'glass-effect rounded-xl p-4 border-l-4 border-red-500 fade-in';
+                notificationIcon.innerHTML = `<svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>`;
+            } else {
+                notification.className = 'glass-effect rounded-xl p-4 border-l-4 border-blue-500 fade-in';
+                notificationIcon.innerHTML = `<svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>`;
+            }
+            setTimeout(() => {
+                notificationArea.classList.add('hidden');
+            }, 6000);
+        }
+
+        // Load user info and update UI
+        async function loadUser() {
+            resetUI();
+            loadingState.classList.remove('hidden');
+
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error || !session) {
+                loadingState.classList.add('hidden');
+                accessDeniedState.classList.remove('hidden');
+                showNotification('error', 'Access Denied', 'Please log in to continue.');
+                return;
+            }
+
+            const user = session.user;
+            userNameEl.textContent = user.email || 'User';
+            userRoleEl.textContent = ''; // Add role logic if implemented
+            userAvatar.textContent = user.email?.slice(0, 2).toUpperCase() || 'U';
+
+            userStatus.classList.remove('hidden');
+            authBtn.textContent = 'Logout';
+            authBtn.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-purple-600');
+            authBtn.classList.add('bg-red-500/80');
+
+            loadingState.classList.add('hidden');
+            dashboardRedirectState.classList.remove('hidden');
+
+            setTimeout(() => {
+                window.location.href = '/dashboard'; // Adjust as per your routing setup
+            }, 4000);
+        }
+
+        // Auth button event
+        authBtn.addEventListener('click', async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                await supabase.auth.signOut();
+                showNotification('info', 'Logged Out', 'You have been successfully logged out.');
+                resetUI();
+                accessDeniedState.classList.remove('hidden');
+            } else {
+                window.location.href = '/login'; // Login page path
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUser();
+        });
+
+        function hideNotification() {
+            notificationArea.classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>

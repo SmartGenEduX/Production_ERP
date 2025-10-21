@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SmartGenEduX Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --sidebar-bg: #181c24;
+      --content-bg: #232837;
+      --tile-bg: #2d3247;
+      --tile-hover: #3a4060;
+      --accent: #00e6b8;
+      --premium: #ffb300;
+      --ai: #00b0ff;
+      --text: #f5f6fa;
+      --muted: #8a8fa3;
+      --border-radius: 18px;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--content-bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .dashboard-container {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 0 0 0;
+      position: fixed;
+      height: 100vh;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.12);
+    }
+    .sidebar .platform-logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #fff;
+      overflow: hidden;
+      border: 2px solid var(--accent);
+    }
+    .sidebar .nav-icon {
+      width: 48px;
+      height: 48px;
+      margin: 18px 0;
+      background: var(--tile-bg);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 1.5em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .sidebar .nav-icon:hover {
+      background: var(--tile-hover);
+      color: var(--accent);
+    }
+    .main-content {
+      margin-left: 260px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .header {
+      background: var(--tile-bg);
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #232837;
+    }
+    .header .platform-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: #fff;
+      border: 2px solid var(--accent);
+      margin-right: 18px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header .branding {
+      display: flex;
+      align-items: center;
+    }
+    .header .user-role {
+      background: var(--tile-hover);
+      color: var(--accent);
+      padding: 8px 18px;
+      border-radius: 16px;
+      font-size: 1em;
+      font-weight: 500;
+      margin-left: 18px;
+    }
+    .header .quick-panel {
+      margin-left: 32px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .header .quick-panel .stat {
+      background: var(--sidebar-bg);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.98em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 32px;
+      padding: 48px 40px;
+      background: url('https://www.transparenttextures.com/patterns/circuit-board.png'), var(--content-bg);
+      background-blend-mode: overlay;
+    }
+    .module-tile {
+      background: var(--tile-bg);
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.18s, box-shadow 0.18s;
+      position: relative;
+      cursor: pointer;
+    }
+    .module-tile:hover {
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      background: var(--tile-hover);
+    }
+    .module-tile .module-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      overflow: hidden;
+      border: 2px solid var(--accent);
+    }
+    .module-tile .module-name {
+      font-size: 1.2em;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+      text-align: center;
+    }
+    .module-tile .feature-bullets {
+      color: var(--muted);
+      font-size: 0.98em;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .module-tile .badge {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 0.9em;
+      font-weight: 600;
+      color: #fff;
+      background: var(--premium);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .module-tile .badge.ai {
+      background: var(--ai);
+    }
+    .footer {
+      background: var(--sidebar-bg);
+      color: var(--muted);
+      text-align: center;
+      padding: 18px 0;
+      font-size: 0.98em;
+      margin-top: auto;
+      position: relative;
+    }
+    .footer .platform-logo-footer {
+      position: absolute;
+      right: 40px;
+      top: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #fff;
+      border: 2px solid var(--accent);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.2;
+    }
+    @media (max-width: 900px) {
+      .module-grid {
+        padding: 32px 10px;
+        gap: 18px;
+      }
+      .main-content {
+        margin-left: 0;
+      }
+      .sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <aside class="sidebar">
+      <div class="platform-logo">
+        <img src="Module%20Assets%20%26%20Logos/smartgenedux-logo.svg" alt="SmartGenEduX Logo" width="64" height="64" />
+      </div>
+      <div class="nav-icon" title="Dashboard">🏠</div>
+      <div class="nav-icon" title="Modules">🧩</div>
+      <div class="nav-icon" title="Reports">📊</div>
+      <div class="nav-icon" title="Settings">⚙️</div>
+    </aside>
+    <main class="main-content">
+      <header class="header">
+        <div class="branding">
+          <div class="platform-logo">
+            <img src="Module%20Assets%20%26%20Logos/smartgenedux-logo.svg" alt="SmartGenEduX Logo" width="36" height="36" />
+          </div>
+          <span style="font-size:1.4em; font-weight:700; color:var(--text)">SmartGenEduX</span>
+        </div>
+        <div style="display:flex; align-items:center;">
+          <span class="user-role">Super Admin</span>
+          <div class="quick-panel">
+            <div class="stat"><span>🔔</span>3 Alerts</div>
+            <div class="stat"><span>📈</span>98% Uptime</div>
+          </div>
+        </div>
+      </header>
+      <section class="module-grid">
+        <!-- All modules below -->
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/admission-management.svg" alt="Admission Management" width="40" height="40" />
+          </div>
+          <div class="module-name">Admission Management</div>
+          <div class="feature-bullets">
+            <ul><li>Online Admission Forms</li><li>Status Tracking</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/fee-management.svg" alt="Fee Management" width="40" height="40" />
+          </div>
+          <div class="module-name">Fee Management</div>
+          <div class="feature-bullets">
+            <ul><li>Invoices & Receipts</li><li>Online Payments</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/attendance.svg" alt="Attendance" width="40" height="40" />
+          </div>
+          <div class="module-name">Students/Teachers Attendance</div>
+          <div class="feature-bullets">
+            <ul><li>GPS Marking</li><li>Detailed Analytics</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/arattai.svg" alt="Arattai Smart Alert" width="40" height="40" />
+          </div>
+          <div class="module-name">Arattai Smart Alert</div>
+          <div class="feature-bullets">
+            <ul><li>Smart Alerts</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/whatsapp-integration.svg" alt="WhatsApp Integration" width="40" height="40" />
+          </div>
+          <div class="module-name">WhatsApp Integration</div>
+          <div class="feature-bullets">
+            <ul><li>Chat and Notifications</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/documentation.svg" alt="Documentation" width="40" height="40" />
+          </div>
+          <div class="module-name">Documentation</div>
+          <div class="feature-bullets">
+            <ul><li>Comprehensive Guides</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/id-card-generator.svg" alt="ID Card Generator" width="40" height="40" />
+          </div>
+          <div class="module-name">ID Card Generator</div>
+          <div class="feature-bullets">
+            <ul><li>Custom ID Cards</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/school-events.svg" alt="School Events" width="40" height="40" />
+          </div>
+          <div class="module-name">School Events</div>
+          <div class="feature-bullets">
+            <ul><li>Event Scheduling</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/school-transport.svg" alt="School Bus Transport" width="40" height="40" />
+          </div>
+          <div class="module-name">School Bus Transport</div>
+          <div class="feature-bullets">
+            <ul><li>Bus Routing</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/cbse-registration.svg" alt="CBSE Registration" width="40" height="40" />
+          </div>
+          <div class="module-name">CBSE Registration Process</div>
+          <div class="feature-bullets">
+            <ul><li>Online CBSE Registrations</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/timetable.svg" alt="Timetable Management" width="40" height="40" />
+          </div>
+          <div class="module-name">Timetable Management</div>
+          <div class="feature-bullets">
+            <ul><li>Auto Scheduling</li><li>Conflict Alerts</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/library.svg" alt="Library Management" width="40" height="40" />
+          </div>
+          <div class="module-name">Library Management</div>
+          <div class="feature-bullets">
+            <ul><li>Book Management</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/substitution.svg" alt="Substitution" width="40" height="40" />
+          </div>
+          <div class="module-name">Substitution</div>
+          <div class="feature-bullets">
+            <ul><li>Teacher Substitution</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/student-distribution.svg" alt="Student Distribution" width="40" height="40" />
+          </div>
+          <div class="module-name">Student Distribution</div>
+          <div class="feature-bullets">
+            <ul><li>Class Allocation</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/behaviour-tracker.svg" alt="Student Behaviour Tracker" width="40" height="40" />
+          </div>
+          <div class="module-name">Student Behaviour Tracker</div>
+          <div class="feature-bullets">
+            <ul><li>Behavioural Analysis</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/report-tracker.svg" alt="Report Tracker" width="40" height="40" />
+          </div>
+          <div class="module-name">Report Tracker</div>
+          <div class="feature-bullets">
+            <ul><li>Performance Reports</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/exam-seating.svg" alt="Exam Seating Planner" width="40" height="40" />
+          </div>
+          <div class="module-name">Exam Seating Planner</div>
+          <div class="feature-bullets">
+            <ul><li>Room Allocation</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/voice-to-text.svg" alt="Voice To Text Converter" width="40" height="40" />
+          </div>
+          <div class="module-name">Voice To Text Converter</div>
+          <div class="feature-bullets">
+            <ul><li>Speech to Docs</li><li>AI Transcription</li></ul>
+          </div>
+          <div class="badge ai">AI</div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/pdf-compilation.svg" alt="PDF Word Compilation" width="40" height="40" />
+          </div>
+          <div class="module-name">PDF Word Compilation</div>
+          <div class="feature-bullets">
+            <ul><li>Document Merging</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/question-generator.svg" alt="Question Paper Generator" width="40" height="40" />
+          </div>
+          <div class="module-name">Question Paper Generator</div>
+          <div class="feature-bullets">
+            <ul><li>AI Paper Setter</li><li>Randomization</li></ul>
+          </div>
+          <div class="badge ai">AI</div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/question-extractor.svg" alt="Question Extractor" width="40" height="40" />
+          </div>
+          <div class="module-name">Question Extractor</div>
+          <div class="feature-bullets">
+            <ul><li>PDF/Doc Parsing</li><li>AI Extraction</li></ul>
+          </div>
+          <div class="badge ai">AI</div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/invigilation.svg" alt="Invigilation Duty Allocation" width="40" height="40" />
+          </div>
+          <div class="module-name">Invigilation Duty Allocation</div>
+          <div class="feature-bullets">
+            <ul><li>Exam Invigilation Scheduling</li></ul>
+          </div>
+        </div>
+
+        <div class="module-tile">
+          <div class="module-logo">
+            <img src="Module%20Assets%20%26%20Logos/fee-management-tally.svg" alt="Fee Management with Tally" width="40" height="40" />
+          </div>
+          <div class="module-name">Fee Management with Tally</div>
+          <div class="feature-bullets">
+            <ul><li>Tally Integration</li><li>Enterprise Finance</li></ul>
+          </div>
+          <div class="badge">Premium</div>
+        </div>
+      </section>
+      <footer class="footer">
+        &copy; 2025 SmartGenEduX. All rights reserved. Version 1.0
+        <div class="platform-logo-footer">
+          <img src="Module%20Assets%20%26%20Logos/smartgenedux-logo.svg" alt="SmartGenEduX Logo" width="24" height="24" />
+        </div>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartGenEduX - Complete School Management ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .section-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .module-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .premium-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .nav-item {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-left: 4px solid #fff;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gradient-to-b from-blue-800 to-blue-900 text-white flex flex-col">
+            <!-- Logo -->
+            <div class="p-6 border-b border-blue-700">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-blue-800 text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">SmartGenEduX</h1>
+                        <p class="text-xs text-blue-200">School Management ERP</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex-1 p-4">
+                <div class="space-y-2">
+                    <div class="nav-item p-3 rounded-lg active" onclick="showSection('dashboard')">
+                        <i class="fas fa-home mr-3"></i>
+                        Dashboard
+                    </div>
+                    <div class="nav-item p-3 rounded-lg" onclick="showSection('modules')">
+                        <i class="fas fa-th-large mr-3"></i>
+                        Modules
+                    </div>
+                    <div class="nav-item p-3 rounded-lg" onclick="showSection('analytics')">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        Analytics
+                    </div>
+                    <div class="nav-item p-3 rounded-lg" onclick="showSection('settings')">
+                        <i class="fas fa-cog mr-3"></i>
+                        Settings
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-blue-700">
+                <div class="text-xs text-blue-200">
+                    <p>Version 2.0</p>
+                    <p>© 2024 SmartGenEduX</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Header -->
+            <header class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold">SmartGenEduX Dashboard</h1>
+                        <p class="opacity-90">Complete School Management Solution</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <p class="text-sm font-medium">Welcome back,</p>
+                            <p class="text-lg font-bold">Administrator</p>
+                        </div>
+                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <main class="p-6" id="mainContent">
+                <!-- Welcome Section -->
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">SmartGenEduX Dashboard</h1>
+                    <p class="text-gray-600">Complete School Management Solution - Choose a section to explore</p>
+                </div>
+
+                <!-- Main Section Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="sectionCards">
+                    <!-- Admin Section -->
+                    <div class="section-card bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300" onclick="showSectionDetails('admin')">
+                        <div class="p-8 text-white">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-cogs text-3xl"></i>
+                                </div>
+                                <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">6 Modules</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Admin Section</h3>
+                            <p class="text-blue-100 mb-4">Core administrative functions for school management</p>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Fee Management</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Attendance with GPS</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>WhatsApp Alerts</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Document Management</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Admission Management</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>School Event Log</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Academic Section -->
+                    <div class="section-card bg-gradient-to-br from-green-500 to-green-700 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300" onclick="showSectionDetails('academic')">
+                        <div class="p-8 text-white">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-graduation-cap text-3xl"></i>
+                                </div>
+                                <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">10 Modules</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Academic Section</h3>
+                            <p class="text-green-100 mb-4">Teaching and learning management tools</p>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Timetable Management</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Teacher Substitution</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Question Papers</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Student Tracking</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>AI Assistant</div>
+                                <div class="text-xs text-green-200 mt-2">...and 5 more modules</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Premium Section -->
+                    <div class="section-card bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300" onclick="showSectionDetails('premium')">
+                        <div class="p-8 text-white">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-crown text-3xl"></i>
+                                </div>
+                                <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">2 Modules</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Premium Section</h3>
+                            <p class="text-purple-100 mb-4">Advanced AI-powered features and integrations</p>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Timesubbehave AI</div>
+                                <div class="flex items-center"><i class="fas fa-circle text-xs mr-2"></i>Tally Integration</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Details (Hidden by default) -->
+                <div id="sectionDetails" class="hidden">
+                    <!-- Admin Section Details -->
+                    <div id="adminDetails" class="section-content hidden">
+                        <div class="mb-6">
+                            <button onclick="showMainSections()" class="text-blue-600 hover:text-blue-800 mb-4">
+                                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                            </button>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">Admin Section</h2>
+                            <p class="text-gray-600">Core administrative functions for school management</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- 1. Fee Management -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('fee-management')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-rupee-sign text-3xl text-yellow-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Fee Management</h4>
+                                    <p class="text-sm text-gray-600">Complete fee collection and tracking system</p>
+                                </div>
+                            </div>
+
+                            <!-- 2. Attendance with GPS -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('attendance')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-map-marker-alt text-3xl text-green-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Attendance with GPS</h4>
+                                    <p class="text-sm text-gray-600">Location-based attendance marking</p>
+                                </div>
+                            </div>
+
+                            <!-- 3. Smart WhatsApp Alert -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('whatsapp')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fab fa-whatsapp text-3xl text-emerald-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Smart WhatsApp Alert</h4>
+                                    <p class="text-sm text-gray-600">Automated parent and teacher notifications</p>
+                                </div>
+                            </div>
+
+                            <!-- 4. PDF to Word & Document Compilation -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('pdf-tools')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-file-pdf text-3xl text-amber-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">PDF & Document Tools</h4>
+                                    <p class="text-sm text-gray-600">Convert PDF to Word and compile documents</p>
+                                </div>
+                            </div>
+
+                            <!-- 5. Admission Management -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('admission')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-user-plus text-3xl text-blue-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Admission Management</h4>
+                                    <p class="text-sm text-gray-600">Complete student admission process</p>
+                                </div>
+                            </div>
+
+                            <!-- 6. School Event Log -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('events')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-calendar-check text-3xl text-purple-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">School Event Log</h4>
+                                    <p class="text-sm text-gray-600">Track and manage school events</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Academic Section Details -->
+                    <div id="academicDetails" class="section-content hidden">
+                        <div class="mb-6">
+                            <button onclick="showMainSections()" class="text-blue-600 hover:text-blue-800 mb-4">
+                                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                            </button>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">Academic Section</h2>
+                            <p class="text-gray-600">Teaching and learning management tools</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- 1. Timetable -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('timetable')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-calendar-alt text-3xl text-blue-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Timetable Management</h4>
+                                    <p class="text-sm text-gray-600">Automated scheduling and conflict resolution</p>
+                                </div>
+                            </div>
+
+                            <!-- 2. Substitution -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('substitution')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-exchange-alt text-3xl text-orange-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Teacher Substitution</h4>
+                                    <p class="text-sm text-gray-600">Manage teacher substitutions and replacements</p>
+                                </div>
+                            </div>
+
+                            <!-- 3. Invigilation Duty Allocation -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('invigilation')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-eye text-3xl text-indigo-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Invigilation Duty</h4>
+                                    <p class="text-sm text-gray-600">Exam supervision duty allocation</p>
+                                </div>
+                            </div>
+
+                            <!-- 4. Student Distribution -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('distribution')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-users text-3xl text-green-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Student Distribution</h4>
+                                    <p class="text-sm text-gray-600">Allocate students to classes and sections</p>
+                                </div>
+                            </div>
+
+                            <!-- 5. Report Tracker -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('reports')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-file-alt text-3xl text-red-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Report Tracker</h4>
+                                    <p class="text-sm text-gray-600">Academic progress and performance reports</p>
+                                </div>
+                            </div>
+
+                            <!-- 6. Student Behaviour Tracker -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('behavior')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-heart text-3xl text-purple-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Behaviour Tracker</h4>
+                                    <p class="text-sm text-gray-600">Monitor and track student behavior patterns</p>
+                                </div>
+                            </div>
+
+                            <!-- 7. Question Paper Generation -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('question-paper')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-file-invoice text-3xl text-teal-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Question Paper Generator</h4>
+                                    <p class="text-sm text-gray-600">Generate exam papers automatically</p>
+                                </div>
+                            </div>
+
+                            <!-- 8. Question Paper Extractor -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('question-extractor')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-search text-3xl text-cyan-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Question Extractor</h4>
+                                    <p class="text-sm text-gray-600">Extract questions from PDFs and documents</p>
+                                </div>
+                            </div>
+
+                            <!-- 9. Voice to Text Converter -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('voice-to-text')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-microphone text-3xl text-pink-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Voice to Text</h4>
+                                    <p class="text-sm text-gray-600">Convert speech to text for documentation</p>
+                                </div>
+                            </div>
+
+                            <!-- 10. Vipu AI -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-6" onclick="openModule('vipu-ai')">
+                                <div class="text-center">
+                                    <div class="w-20 h-20 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-robot text-3xl text-violet-600"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-2">Vipu AI Assistant</h4>
+                                    <p class="text-sm text-gray-600">AI-powered educational assistant</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Premium Section Details -->
+                    <div id="premiumDetails" class="section-content hidden">
+                        <div class="mb-6">
+                            <button onclick="showMainSections()" class="text-blue-600 hover:text-blue-800 mb-4">
+                                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                            </button>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">Premium Section</h2>
+                            <p class="text-gray-600">Advanced AI-powered features and integrations</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- 1. Timesubbehave AI -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-8 relative" onclick="openModule('ai-premium')">
+                                <div class="premium-badge">PREMIUM</div>
+                                <div class="text-center">
+                                    <div class="w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <i class="fas fa-brain text-4xl text-white"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-3 text-xl">Timesubbehave AI</h4>
+                                    <p class="text-gray-600">Advanced behavioral analytics with AI insights for comprehensive student assessment</p>
+                                </div>
+                            </div>
+
+                            <!-- 2. Fee Management with Tally -->
+                            <div class="module-card bg-white rounded-lg shadow-lg p-8 relative" onclick="openModule('tally-integration')">
+                                <div class="premium-badge">PREMIUM</div>
+                                <div class="text-center">
+                                    <div class="w-24 h-24 bg-gradient-to-br from-green-400 to-blue-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <i class="fas fa-chart-line text-4xl text-white"></i>
+                                    </div>
+                                    <h4 class="font-bold text-gray-900 mb-3 text-xl">Fee Management with Tally</h4>
+                                    <p class="text-gray-600">Enterprise accounting and financial management with Tally integration</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Show main section cards
+        function showMainSections() {
+            document.getElementById('sectionCards').classList.remove('hidden');
+            document.getElementById('sectionDetails').classList.add('hidden');
+        }
+
+        // Show specific section details
+        function showSectionDetails(section) {
+            document.getElementById('sectionCards').classList.add('hidden');
+            document.getElementById('sectionDetails').classList.remove('hidden');
+            
+            // Hide all section details
+            document.querySelectorAll('.section-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show specific section detail
+            document.getElementById(section + 'Details').classList.remove('hidden');
+        }
+
+        // Open module
+        function openModule(moduleName) {
+            const moduleUrls = {
+                'timetable': 'modules/timetable.html',
+                'attendance': 'modules/attendance.html',
+                'fee-management': 'modules/fee-management.html',
+                'behavior': 'modules/student-behavior.html',
+                'substitution': 'modules/substitution.html',
+                'reports': 'modules/report-tracker.html',
+                'events': 'modules/school-events.html',
+                'whatsapp': 'modules/whatsapp-alerts.html',
+                'arattai': 'modules/arattai.html',
+                'vipu-ai': 'modules/vipu-ai.html',
+                'id-card-generator': 'modules/id-card-generator.html',
+                'cbse-registration': 'modules/cbse-registration.html'
+            };
+            
+            if (moduleUrls[moduleName]) {
+                window.open(moduleUrls[moduleName], '_blank');
+            } else {
+                alert(`${moduleName} module opening...`);
+            }
+        }
+
+        // Show different sections
+        function showSection(section) {
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            if (section === 'dashboard') {
+                showMainSections();
+            }
+        }
+ <script>
+        document.addEventListener('DOMContentLoaded', () => {
+  // Fetch and display real dashboard stats
+  fetchDashboardStats();
+
+  // Fetch and render modules dynamically
+  loadModules();
+
+  // Initialize nav active states
+  initNavigation();
+});
+
+async function fetchDashboardStats() {
+  // Simulate backend API call - replace with real fetch
+  const stats = await simulatedFetchStats();
+
+  const statsContainer = document.getElementById('mainStats');
+  if (!statsContainer) return;
+
+  statsContainer.innerHTML = stats
+    .map(({ icon, value, label }) => `
+      <div class="stat-card">
+        <div class="stat-icon">${icon}</div>
+        <div class="stat-value">${value}</div>
+        <div class="stat-label">${label}</div>
+      </div>
+    `).join('');
+}
+
+async function simulatedFetchStats() {
+  // Dummy sample stats - replace with real API
+  await new Promise((r) => setTimeout(r, 500)); // simulate delay
+  return [
+    { icon: '🏫', value: '247', label: 'Total Schools' },
+    { icon: '👥', value: '15,432', label: 'Total Students' },
+    { icon: '👨‍🏫', value: '2,186', label: 'Total Teachers' },
+  ];
+}
+
+function loadModules() {
+  // You can fetch real modules from backend. Here is a sample dynamic addition:
+  const academicModules = [
+    { id: 'attendance', name: 'Attendance', icon: 'attendance.png', desc: 'Track attendance', features: ['GPS Tracking', 'Daily Reports'], status: 'Active' },
+    { id: 'exams', name: 'Exams', icon: 'exams.png', desc: 'Manage exams', features: ['Scheduling', 'Results'], status: 'Active' },
+  ];
+
+  const moduleContainer = document.getElementById('moduleContainer');
+  if (!moduleContainer) return;
+
+  moduleContainer.innerHTML = academicModules.map(m => `
+    <div class="module-card" onclick="openModule('${m.id}')">
+      <img src="./assets/${m.icon}" alt="${m.name}" class="module-icon" />
+      <h4>${m.name}</h4>
+      <p>${m.desc}</p>
+      <ul>${m.features.map(f => `<li>${f}</li>`).join('')}</ul>
+      <div class="status">${m.status}</div>
+    </div>
+  `).join('');
+}
+
+function initNavigation() {
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.addEventListener('click', e => {
+      navItems.forEach(i => i.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      // Switch content sections accordingly
+    });
+  });
+}
+
+function openModule(id) {
+  alert(`Opening module: ${id}`);
+}
+    </script>
+    
+</body>
+</html>

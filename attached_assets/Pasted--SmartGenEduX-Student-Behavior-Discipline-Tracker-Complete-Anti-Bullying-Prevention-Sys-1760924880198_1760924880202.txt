@@ -1,0 +1,1485 @@
+/**
+ * SmartGenEduX Student Behavior & Discipline Tracker
+ * Complete Anti-Bullying Prevention System
+ * Version 3.0 - Professional Edition with WhatsApp Integration
+ */
+/**
+ * Creates enhanced menu with behavior management functions
+ */
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('📊 SmartGenEduX Behavior Management')
+    .addItem('🎯 Setup Behavior Tracker', 'setupBehaviorTracker')
+    .addItem('📝 Record Incident', 'recordBehaviorIncident')
+    .addItem('🚨 Record Bullying Incident', 'manageBullyingIncident')
+    .addItem('🌟 Record Achievement', 'recordPositiveBehavior')
+    .addItem('📊 View Analytics Dashboard', 'showBehaviorAnalytics')
+    .addItem('📱 Send Parent Notifications', 'sendBehaviorNotifications')
+    .addItem('🎓 Generate Reports', 'generateBehaviorReports')
+    .addItem('🌐 Deploy Web API', 'deployBehaviorAPI')
+    .addToUi();
+}
+/**
+ * Setup comprehensive behavior tracking system
+ */
+function setupBehaviorTracker() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Create all required sheets
+  createSheetIfNotExists('STUDENT_BEHAVIOR_MASTER', setupStudentBehaviorMasterSheet);
+  createSheetIfNotExists('INCIDENT_RECORDS', setupIncidentRecordsSheet);
+  createSheetIfNotExists('POSITIVE_BEHAVIOR_LOG', setupPositiveBehaviorSheet);
+  createSheetIfNotExists('BEHAVIOR_NOTIFICATIONS', setupBehaviorNotificationsSheet);
+  createSheetIfNotExists('COUNSELOR_REFERRALS', setupCounselorReferralsSheet);
+  createSheetIfNotExists('PARENT_CONFERENCES', setupParentConferencesSheet);
+  createSheetIfNotExists('BEHAVIOR_ANALYTICS', setupBehaviorAnalyticsSheet);
+  createSheetIfNotExists('RECOGNITION_AWARDS', setupRecognitionAwardsSheet);
+  createSheetIfNotExists('SAFETY_PLANS', setupSafetyPlansSheet);
+  
+  // Initialize sample data
+  initializeBehaviorSampleData();
+  
+  SpreadsheetApp.getUi().alert(
+    '🎯 SmartGenEduX Behavior Management System Setup Complete!\n\n' +
+    '✅ Student Behavior Master Sheet\n' +
+    '✅ Incident Records\n' +
+    '✅ Positive Behavior Log\n' +
+    '✅ Anti-Bullying Prevention System\n' +
+    '✅ Parent Communication System\n' +
+    '✅ Counselor Referral System\n' +
+    '✅ Analytics Dashboard\n' +
+    '✅ Safety Plan Management\n\n' +
+    'Your comprehensive behavior tracking system is ready!'
+  );
+}
+/**
+ * Setup Student Behavior Master Sheet
+ */
+function setupStudentBehaviorMasterSheet(sheet) {
+  const headers = [
+    'STUDENT_ID', 'STUDENT_NAME', 'CLASS', 'SECTION', 'PARENT_PHONE',
+    'BEHAVIOR_SCORE', 'INCIDENT_COUNT', 'POSITIVE_POINTS', 'RISK_LEVEL',
+    'LAST_INCIDENT', 'LAST_ACHIEVEMENT', 'COUNSELOR_ASSIGNED', 'NOTES'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#673AB7').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+/**
+ * Setup Incident Records Sheet
+ */
+function setupIncidentRecordsSheet(sheet) {
+  const headers = [
+    'INCIDENT_ID', 'INCIDENT_DATE', 'INCIDENT_TIME', 'STUDENT_ID', 'STUDENT_NAME',
+    'CLASS', 'INCIDENT_TYPE', 'SEVERITY', 'LOCATION', 'DESCRIPTION',
+    'WITNESSES', 'REPORTED_BY', 'ACTION_TAKEN', 'PARENT_CONTACTED',
+    'COUNSELOR_REFERRED', 'PRINCIPAL_INFORMED', 'STATUS', 'FOLLOW_UP'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#F44336').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+/**
+ * Setup Positive Behavior Sheet
+ */
+function setupPositiveBehaviorSheet(sheet) {
+  const headers = [
+    'ACHIEVEMENT_ID', 'ACHIEVEMENT_DATE', 'STUDENT_ID', 'STUDENT_NAME',
+    'CLASS', 'ACHIEVEMENT_TYPE', 'DESCRIPTION', 'POINTS_AWARDED',
+    'AWARDED_BY', 'AWARD_LEVEL', 'CERTIFICATE_ISSUED', 'PUBLIC_RECOGNITION'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#4CAF50').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+/**
+ * Record behavior incident
+ */
+function recordBehaviorIncident() {
+  const html = HtmlService.createHtmlOutput(`
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      .form-group { margin-bottom: 15px; }
+      label { display: block; margin-bottom: 5px; font-weight: bold; }
+      select, input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+      textarea { height: 80px; resize: vertical; }
+      .btn { background: #673AB7; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+      .btn:hover { background: #512DA8; }
+    </style>
+    
+    <h2>📝 Record Behavior Incident</h2>
+    
+    <div class="form-group">
+      <label>Student ID:</label>
+      <input type="text" id="studentId" placeholder="Enter Student ID (e.g., STU001)">
+    </div>
+    
+    <div class="form-group">
+      <label>Incident Type:</label>
+      <select id="incidentType">
+        <option value="CLASSROOM_DISRUPTION">Classroom Disruption</option>
+        <option value="DISRESPECT_TEACHER">Disrespect to Teacher</option>
+        <option value="FIGHTING">Physical Fighting</option>
+        <option value="BULLYING_PHYSICAL">Physical Bullying</option>
+        <option value="BULLYING_VERBAL">Verbal Bullying</option>
+        <option value="BULLYING_SOCIAL">Social Bullying</option>
+        <option value="CYBERBULLYING">Cyberbullying</option>
+        <option value="VANDALISM">Vandalism</option>
+        <option value="THEFT">Theft</option>
+        <option value="INAPPROPRIATE_LANGUAGE">Inappropriate Language</option>
+        <option value="UNIFORM_VIOLATION">Uniform Violation</option>
+        <option value="TARDINESS">Repeated Tardiness</option>
+        <option value="ACADEMIC_DISHONESTY">Academic Dishonesty</option>
+        <option value="OTHER">Other</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Severity Level:</label>
+      <select id="severity">
+        <option value="MINOR">Minor - Warning needed</option>
+        <option value="MODERATE">Moderate - Intervention required</option>
+        <option value="MAJOR">Major - Serious consequences</option>
+        <option value="SEVERE">Severe - Immediate action needed</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Location:</label>
+      <select id="location">
+        <option value="CLASSROOM">Classroom</option>
+        <option value="PLAYGROUND">Playground</option>
+        <option value="CAFETERIA">Cafeteria</option>
+        <option value="LIBRARY">Library</option>
+        <option value="CORRIDOR">Corridor</option>
+        <option value="BATHROOM">Bathroom</option>
+        <option value="SCHOOL_BUS">School Bus</option>
+        <option value="SPORTS_FIELD">Sports Field</option>
+        <option value="OTHER">Other</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Detailed Description:</label>
+      <textarea id="description" placeholder="Describe the incident in detail..."></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>Witnesses (if any):</label>
+      <input type="text" id="witnesses" placeholder="Names of witnesses">
+    </div>
+    
+    <div class="form-group">
+      <label>Immediate Action Taken:</label>
+      <textarea id="actionTaken" placeholder="What action was taken immediately..."></textarea>
+    </div>
+    
+    <button class="btn" onclick="submitIncident()">Record Incident</button>
+    
+    <script>
+      function submitIncident() {
+        const incidentData = {
+          studentId: document.getElementById('studentId').value,
+          incidentType: document.getElementById('incidentType').value,
+          severity: document.getElementById('severity').value,
+          location: document.getElementById('location').value,
+          description: document.getElementById('description').value,
+          witnesses: document.getElementById('witnesses').value,
+          actionTaken: document.getElementById('actionTaken').value
+        };
+        
+        if (!incidentData.studentId || !incidentData.description) {
+          alert('Please fill Student ID and Description');
+          return;
+        }
+        
+        google.script.run
+          .withSuccessHandler(result => {
+            alert('Incident recorded successfully! ID: ' + result.incidentId);
+            google.script.host.close();
+          })
+          .withFailureHandler(error => alert('Error: ' + error.message))
+          .processIncidentRecord(incidentData);
+      }
+    </script>
+  `).setWidth(500).setHeight(700);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'SmartGenEduX Incident Recorder');
+}
+/**
+ * Process incident record
+ */
+function processIncidentRecord(incidentData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const incidentSheet = ss.getSheetByName('INCIDENT_RECORDS');
+  
+  const incidentId = 'INC' + new Date().getTime();
+  
+  const incidentRecord = [
+    incidentId,
+    new Date(),
+    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm'),
+    incidentData.studentId,
+    '', // Will be filled by student lookup
+    '', // Class info
+    incidentData.incidentType,
+    incidentData.severity,
+    incidentData.location,
+    incidentData.description,
+    incidentData.witnesses,
+    Session.getActiveUser().getEmail(),
+    incidentData.actionTaken,
+    'YES',
+    incidentData.severity === 'MAJOR' || incidentData.severity === 'SEVERE' ? 'YES' : 'NO',
+    incidentData.severity === 'SEVERE' ? 'YES' : 'NO',
+    'RECORDED',
+    ''
+  ];
+  
+  incidentSheet.appendRow(incidentRecord);
+  
+  // Update student behavior score
+  updateStudentBehaviorScore(incidentData.studentId, 'INCIDENT', incidentData.severity);
+  
+  // Send parent notification
+  sendIncidentParentNotification(incidentData.studentId, incidentId, incidentData);
+  
+  return {
+    success: true,
+    incidentId: incidentId
+  };
+}
+/**
+ * Record positive behavior
+ */
+function recordPositiveBehavior() {
+  const html = HtmlService.createHtmlOutput(`
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      .form-group { margin-bottom: 15px; }
+      label { display: block; margin-bottom: 5px; font-weight: bold; }
+      select, input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+      textarea { height: 80px; resize: vertical; }
+      .btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+      .btn:hover { background: #45a049; }
+    </style>
+    
+    <h2>🌟 Record Positive Behavior</h2>
+    
+    <div class="form-group">
+      <label>Student ID:</label>
+      <input type="text" id="studentId" placeholder="Enter Student ID">
+    </div>
+    
+    <div class="form-group">
+      <label>Achievement Type:</label>
+      <select id="achievementType">
+        <option value="ACADEMIC_EXCELLENCE">Academic Excellence</option>
+        <option value="PERFECT_ATTENDANCE">Perfect Attendance</option>
+        <option value="HELPING_CLASSMATES">Helping Classmates</option>
+        <option value="LEADERSHIP_QUALITIES">Leadership Qualities</option>
+        <option value="GOOD_BEHAVIOR">Exemplary Behavior</option>
+        <option value="SPORTS_ACHIEVEMENT">Sports Achievement</option>
+        <option value="ARTISTIC_TALENT">Artistic Talent</option>
+        <option value="COMMUNITY_SERVICE">Community Service</option>
+        <option value="IMPROVEMENT_SHOWN">Significant Improvement</option>
+        <option value="PEER_MEDIATION">Peer Mediation</option>
+        <option value="ANTI_BULLYING_STAND">Taking Stand Against Bullying</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Points to Award:</label>
+      <select id="points">
+        <option value="5">5 Points - Good behavior</option>
+        <option value="10">10 Points - Excellent behavior</option>
+        <option value="15">15 Points - Outstanding achievement</option>
+        <option value="20">20 Points - Exceptional contribution</option>
+        <option value="25">25 Points - Extraordinary accomplishment</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Award Level:</label>
+      <select id="awardLevel">
+        <option value="CLASS_RECOGNITION">Class Recognition</option>
+        <option value="GRADE_RECOGNITION">Grade Recognition</option>
+        <option value="SCHOOL_RECOGNITION">School Recognition</option>
+        <option value="DISTRICT_RECOGNITION">District Recognition</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Description:</label>
+      <textarea id="description" placeholder="Describe the positive behavior or achievement..."></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="certificateIssue"> Issue Certificate
+      </label>
+    </div>
+    
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="publicRecognition"> Public Recognition
+      </label>
+    </div>
+    
+    <button class="btn" onclick="submitAchievement()">Record Achievement</button>
+    
+    <script>
+      function submitAchievement() {
+        const achievementData = {
+          studentId: document.getElementById('studentId').value,
+          achievementType: document.getElementById('achievementType').value,
+          points: parseInt(document.getElementById('points').value),
+          awardLevel: document.getElementById('awardLevel').value,
+          description: document.getElementById('description').value,
+          certificateIssue: document.getElementById('certificateIssue').checked,
+          publicRecognition: document.getElementById('publicRecognition').checked
+        };
+        
+        if (!achievementData.studentId || !achievementData.description) {
+          alert('Please fill Student ID and Description');
+          return;
+        }
+        
+        google.script.run
+          .withSuccessHandler(result => {
+            alert('Achievement recorded successfully! ID: ' + result.achievementId);
+            google.script.host.close();
+          })
+          .withFailureHandler(error => alert('Error: ' + error.message))
+          .processAchievementRecord(achievementData);
+      }
+    </script>
+  `).setWidth(500).setHeight(600);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'SmartGenEduX Achievement Recorder');
+}
+/**
+ * Process achievement record
+ */
+function processAchievementRecord(achievementData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const achievementSheet = ss.getSheetByName('POSITIVE_BEHAVIOR_LOG');
+  
+  const achievementId = 'ACH' + new Date().getTime();
+  
+  const achievementRecord = [
+    achievementId,
+    new Date(),
+    achievementData.studentId,
+    '', // Will be filled by student lookup
+    '', // Class info
+    achievementData.achievementType,
+    achievementData.description,
+    achievementData.points,
+    Session.getActiveUser().getEmail(),
+    achievementData.awardLevel,
+    achievementData.certificateIssue ? 'YES' : 'NO',
+    achievementData.publicRecognition ? 'YES' : 'NO'
+  ];
+  
+  achievementSheet.appendRow(achievementRecord);
+  
+  // Update student behavior score
+  updateStudentBehaviorScore(achievementData.studentId, 'ACHIEVEMENT', achievementData.points);
+  
+  // Send parent notification
+  sendAchievementNotification(achievementData.studentId, achievementId, achievementData);
+  
+  return {
+    success: true,
+    achievementId: achievementId
+  };
+}
+/**
+ * Update student behavior score
+ */
+function updateStudentBehaviorScore(studentId, type, value) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const behaviorSheet = ss.getSheetByName('STUDENT_BEHAVIOR_MASTER');
+  const data = behaviorSheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === studentId) {
+      let currentScore = parseFloat(data[i][5]) || 85; // Default score
+      let incidentCount = parseInt(data[i][6]) || 0;
+      let positivePoints = parseInt(data[i][7]) || 0;
+      
+      if (type === 'INCIDENT') {
+        const severityPoints = {
+          'MINOR': -2,
+          'MODERATE': -5,
+          'MAJOR': -10,
+          'SEVERE': -15
+        };
+        currentScore += severityPoints[value] || -2;
+        incidentCount++;
+      } else if (type === 'ACHIEVEMENT') {
+        currentScore += Math.min(value * 0.5, 5); // Cap positive impact
+        positivePoints += value;
+      }
+      
+      // Ensure score stays within 0-100 range
+      currentScore = Math.max(0, Math.min(100, currentScore));
+      
+      // Determine risk level
+      let riskLevel = 'GREEN';
+      if (currentScore < 70) riskLevel = 'RED';
+      else if (currentScore < 85) riskLevel = 'YELLOW';
+      
+      // Update the row
+      behaviorSheet.getRange(i + 1, 6, 1, 3).setValues([[currentScore, incidentCount, positivePoints]]);
+      behaviorSheet.getRange(i + 1, 9).setValue(riskLevel);
+      
+      break;
+    }
+  }
+}
+/**
+ * Get student behavior info
+ */
+function getStudentBehaviorInfo(studentId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const behaviorSheet = ss.getSheetByName('STUDENT_BEHAVIOR_MASTER');
+  const data = behaviorSheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === studentId) {
+      return {
+        studentId: data[i][0],
+        name: data[i][1],
+        class: data[i][2],
+        section: data[i][3],
+        parentPhone: data[i][4],
+        behaviorScore: data[i][5],
+        incidentCount: data[i][6],
+        positivePoints: data[i][7],
+        riskLevel: data[i][8]
+      };
+    }
+  }
+  
+  return null;
+}
+/**
+ * Send incident notification to parent
+ */
+function sendIncidentParentNotification(studentId, incidentId, incidentData) {
+  const studentInfo = getStudentBehaviorInfo(studentId);
+  const parentPhone = studentInfo.parentPhone;
+  
+  if (parentPhone) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const notificationSheet = ss.getSheetByName('BEHAVIOR_NOTIFICATIONS');
+    
+    const message = `🏫 *SmartGenEduX Disciplinary Alert*
+⚠️ *Behavior Incident Report*
+👨‍👩‍👧‍👦 Dear Parent,
+We need to inform you about a behavior incident involving *${studentInfo.name}* (Class ${studentInfo.class}-${studentInfo.section}).
+📋 *Incident:* ${incidentData.incidentType.replace('_', ' ')}
+📅 *Date:* ${new Date().toLocaleDateString()}
+⏰ *Time:* ${new Date().toLocaleTimeString()}
+📍 *Location:* ${incidentData.location}
+🔸 *Severity:* ${incidentData.severity}
+📝 *Details:* ${incidentData.description}
+✅ *Action Taken:* ${incidentData.actionTaken}
+*Current Behavior Score:* ${studentInfo.behaviorScore}/100
+*Risk Level:* ${studentInfo.riskLevel}
+${incidentData.severity === 'MAJOR' || incidentData.severity === 'SEVERE' ? 
+  '📞 *Parent meeting required within 24 hours*' : 
+  '💬 Please discuss this with your child'
+}
+📞 Contact: 9952912772
+📧 Email: prativedan@smartgenedux.org
+*Powered by SmartGenEduX Educational Management*`;
+    
+    // Log notification
+    const notificationRecord = [
+      'BINC' + new Date().getTime(),
+      studentId,
+      studentInfo.name,
+      'INCIDENT_ALERT',
+      parentPhone,
+      message,
+      'PENDING',
+      new Date(),
+      'WHATSAPP',
+      incidentId
+    ];
+    
+    notificationSheet.appendRow(notificationRecord);
+  }
+}
+/**
+ * Send achievement notification to parent
+ */
+function sendAchievementNotification(studentId, achievementId, achievementData) {
+  const studentInfo = getStudentBehaviorInfo(studentId);
+  const parentPhone = studentInfo.parentPhone;
+  
+  if (parentPhone) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const notificationSheet = ss.getSheetByName('BEHAVIOR_NOTIFICATIONS');
+    
+    const message = `🏫 *SmartGenEduX Achievement Alert*
+🌟 *Positive Recognition for ${studentInfo.name}*
+👨‍👩‍👧‍👦 Dear Parent,
+We are delighted to share some wonderful news about *${studentInfo.name}* (Class ${studentInfo.class}-${studentInfo.section}).
+🏆 *Achievement:* ${achievementData.achievementType.replace('_', ' ')}
+📝 *Description:* ${achievementData.description}
+⭐ *Points Earned:* ${achievementData.points}
+📝 *Recognition Level:* ${achievementData.awardLevel.replace('_', ' ')}
+*Current Behavior Score:* ${studentInfo.behaviorScore}/100
+*Total Positive Points:* ${studentInfo.positivePoints + achievementData.points}
+${achievementData.certificateIssue ? '🏅 *Certificate will be issued*' : ''}
+${achievementData.publicRecognition ? '📢 *Will be recognized publicly*' : ''}
+We are proud of your child's positive behavior and achievements!
+📞 Contact: 9952912772
+📧 Email: prativedan@smartgenedux.org
+*Powered by SmartGenEduX Educational Management*`;
+    
+    // Log notification
+    const notificationRecord = [
+      'BACH' + new Date().getTime(),
+      studentId,
+      studentInfo.name,
+      'ACHIEVEMENT_ALERT',
+      parentPhone,
+      message,
+      'PENDING',
+      new Date(),
+      'WHATSAPP',
+      achievementId
+    ];
+    
+    notificationSheet.appendRow(notificationRecord);
+  }
+}
+/**
+ * Create counselor referral
+ */
+function createCounselorReferral(studentId, incidentId, severity) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const referralSheet = ss.getSheetByName('COUNSELOR_REFERRALS');
+  const studentInfo = getStudentBehaviorInfo(studentId);
+  
+  const referralId = 'REF' + new Date().getTime();
+  const urgency = (severity === 'MAJOR' || severity === 'SEVERE') ? 'HIGH' : 'MEDIUM';
+  
+  const referralRecord = [
+    referralId,
+    studentId,
+    studentInfo.name,
+    studentInfo.class + '-' + studentInfo.section,
+    incidentId,
+    'BEHAVIORAL_INCIDENT',
+    urgency,
+    new Date(),
+    '',
+    'PENDING',
+    Session.getActiveUser().getEmail(),
+    '',
+    `Referral due to ${severity} behavioral incident`,
+    ''
+  ];
+  
+  referralSheet.appendRow(referralRecord);
+}
+/**
+ * Enhanced Bullying Prevention System
+ */
+function manageBullyingIncident() {
+  const html = HtmlService.createHtmlOutput(`
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      .form-group { margin-bottom: 15px; }
+      label { display: block; margin-bottom: 5px; font-weight: bold; }
+      select, input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+      textarea { height: 80px; resize: vertical; }
+      .btn { background: #E91E63; color: white; padding: 10px 20px; border: none; cursor: pointer; margin: 5px; }
+      .btn:hover { background: #C2185B; }
+      .student-group { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 8px; }
+      .add-student { background: #2196F3; color: white; padding: 5px 10px; border: none; cursor: pointer; }
+    </style>
+    
+    <h2>🚨 Record Bullying Incident</h2>
+    
+    <div class="student-group">
+      <h3>👤 Primary Aggressor (Bully)</h3>
+      <div class="form-group">
+        <label>Student ID:</label>
+        <input type="text" id="bullyId" placeholder="Enter Student ID">
+      </div>
+    </div>
+    
+    <div class="student-group">
+      <h3>🎯 Primary Victim</h3>
+      <div class="form-group">
+        <label>Student ID:</label>
+        <input type="text" id="victimId" placeholder="Enter Student ID">
+      </div>
+    </div>
+    
+    <div class="student-group">
+      <h3>👥 Additional Involved Students</h3>
+      <div id="additionalStudents">
+        <div class="form-group">
+          <label>Student ID:</label>
+          <input type="text" placeholder="Additional bully/victim/bystander">
+          <select>
+            <option value="BULLY">Additional Bully</option>
+            <option value="VICTIM">Additional Victim</option>
+            <option value="BYSTANDER_HELPFUL">Helpful Bystander</option>
+            <option value="BYSTANDER_PASSIVE">Passive Bystander</option>
+          </select>
+        </div>
+      </div>
+      <button class="add-student" onclick="addStudentField()">+ Add Another Student</button>
+    </div>
+    
+    <div class="form-group">
+      <label>Bullying Type:</label>
+      <select id="bullyingType">
+        <option value="PHYSICAL_BULLYING">Physical Bullying (hitting, pushing, property damage)</option>
+        <option value="VERBAL_BULLYING">Verbal Bullying (name-calling, threats, insults)</option>
+        <option value="SOCIAL_BULLYING">Social/Relational Bullying (exclusion, rumors)</option>
+        <option value="CYBERBULLYING">Cyberbullying (online harassment, social media)</option>
+        <option value="SEXUAL_HARASSMENT">Sexual Harassment</option>
+        <option value="DISCRIMINATORY_BULLYING">Discriminatory Bullying (race, religion, etc.)</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Frequency:</label>
+      <select id="frequency">
+        <option value="FIRST_TIME">First Time Incident</option>
+        <option value="REPEATED">Repeated Pattern</option>
+        <option value="ONGOING">Ongoing Situation</option>
+        <option value="ESCALATED">Escalated from Previous</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Location:</label>
+      <select id="location">
+        <option value="PLAYGROUND">Playground</option>
+        <option value="CLASSROOM">Classroom</option>
+        <option value="CAFETERIA">Cafeteria</option>
+        <option value="BATHROOM">Bathroom</option>
+        <option value="CORRIDOR">Corridor/Hallway</option>
+        <option value="SCHOOL_BUS">School Bus</option>
+        <option value="ONLINE">Online/Social Media</option>
+        <option value="OFF_CAMPUS">Off Campus</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>Detailed Description:</label>
+      <textarea id="description" placeholder="Describe what happened, include direct quotes if possible..."></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>Evidence Available:</label>
+      <textarea id="evidence" placeholder="Photos, videos, screenshots, witness statements, etc."></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>Immediate Action Taken:</label>
+      <textarea id="immediateAction" placeholder="What was done immediately to ensure safety..."></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="emergencyContact"> Emergency parent contact required
+      </label>
+    </div>
+    
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="safetyPlan"> Safety plan needed for victim
+      </label>
+    </div>
+    
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="policeInvolvement"> Consider police involvement
+      </label>
+    </div>
+    
+    <button class="btn" onclick="recordBullyingIncident()">Record Bullying Incident</button>
+    
+    <script>
+      function addStudentField() {
+        const container = document.getElementById('additionalStudents');
+        const newField = document.createElement('div');
+        newField.className = 'form-group';
+        newField.innerHTML = '<label>Student ID:</label><input type="text" placeholder="Additional student ID"><select><option value="BULLY">Additional Bully</option><option value="VICTIM">Additional Victim</option><option value="BYSTANDER_HELPFUL">Helpful Bystander</option><option value="BYSTANDER_PASSIVE">Passive Bystander</option></select>';
+        container.appendChild(newField);
+      }
+      
+      function recordBullyingIncident() {
+        const bullyingData = {
+          bullyId: document.getElementById('bullyId').value,
+          victimId: document.getElementById('victimId').value,
+          bullyingType: document.getElementById('bullyingType').value,
+          frequency: document.getElementById('frequency').value,
+          location: document.getElementById('location').value,
+          description: document.getElementById('description').value,
+          evidence: document.getElementById('evidence').value,
+          immediateAction: document.getElementById('immediateAction').value,
+          emergencyContact: document.getElementById('emergencyContact').checked,
+          safetyPlan: document.getElementById('safetyPlan').checked,
+          policeInvolvement: document.getElementById('policeInvolvement').checked,
+          additionalStudents: getAdditionalStudents()
+        };
+        
+        if (!bullyingData.bullyId || !bullyingData.victimId || !bullyingData.description) {
+          alert('Please fill required fields: Bully ID, Victim ID, and Description');
+          return;
+        }
+        
+        google.script.run
+          .withSuccessHandler(result => {
+            alert('🚨 Bullying incident recorded successfully!' + String.fromCharCode(10) + 'Incident ID: ' + result.incidentId + String.fromCharCode(10) + 'All relevant parties will be notified.');
+            google.script.host.close();
+          })
+          .withFailureHandler(error => alert('❌ Error: ' + error.message))
+          .processBullyingIncident(bullyingData);
+      }
+      
+      function getAdditionalStudents() {
+        const inputs = document.querySelectorAll('#additionalStudents input');
+        const selects = document.querySelectorAll('#additionalStudents select');
+        const students = [];
+        
+        for (let i = 0; i < inputs.length; i++) {
+          if (inputs[i].value.trim()) {
+            students.push({
+              studentId: inputs[i].value.trim(),
+              role: selects[i].value
+            });
+          }
+        }
+        
+        return students;
+      }
+    </script>
+  `).setWidth(600).setHeight(800);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'SmartGenEduX Anti-Bullying System');
+}
+/**
+ * Process bullying incident with enhanced tracking
+ */
+function processBullyingIncident(bullyingData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const incidentSheet = ss.getSheetByName('INCIDENT_RECORDS');
+  
+  // Generate incident ID
+  const incidentId = 'BULL' + new Date().getTime();
+  
+  // Record main bullying incident
+  const mainIncident = [
+    incidentId,
+    new Date(),
+    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm'),
+    bullyingData.bullyId,
+    '', // Will be filled by student lookup
+    '', // Class info
+    'BULLYING_' + bullyingData.bullyingType,
+    determineBullyingSeverity(bullyingData),
+    bullyingData.location,
+    `BULLYING INCIDENT - ${bullyingData.description}\nVictim: ${bullyingData.victimId}\nFrequency: ${bullyingData.frequency}\nEvidence: ${bullyingData.evidence}`,
+    bullyingData.additionalStudents.map(s => s.studentId + ' (' + s.role + ')').join(', '),
+    Session.getActiveUser().getEmail(),
+    bullyingData.immediateAction,
+    'YES',
+    'YES',
+    'YES',
+    'ONGOING',
+    ''
+  ];
+  
+  incidentSheet.appendRow(mainIncident);
+  
+  // Create victim incident record
+  const victimIncident = [
+    incidentId + '_V',
+    new Date(),
+    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm'),
+    bullyingData.victimId,
+    '', // Will be filled
+    '',
+    'BULLYING_VICTIM',
+    determineBullyingSeverity(bullyingData),
+    bullyingData.location,
+    `BULLYING VICTIM - ${bullyingData.description}\nPerpetrator: ${bullyingData.bullyId}`,
+    bullyingData.additionalStudents.map(s => s.studentId + ' (' + s.role + ')').join(', '),
+    Session.getActiveUser().getEmail(),
+    bullyingData.safetyPlan ? 'Safety plan initiated' : 'Support provided',
+    'YES',
+    'YES',
+    'YES',
+    'ONGOING',
+    ''
+  ];
+  
+  incidentSheet.appendRow(victimIncident);
+  
+  // Update behavior scores
+  const severity = determineBullyingSeverity(bullyingData);
+  updateStudentBehaviorScore(bullyingData.bullyId, 'INCIDENT', severity);
+  updateStudentBehaviorScore(bullyingData.victimId, 'INCIDENT', 'MINOR'); // Victim gets minor impact for tracking
+  
+  // Send comprehensive notifications
+  sendBullyingNotifications(bullyingData, incidentId);
+  
+  // Create counselor referrals for both parties
+  createCounselorReferral(bullyingData.bullyId, incidentId, severity);
+  createCounselorReferral(bullyingData.victimId, incidentId, 'SUPPORT_NEEDED');
+  
+  // Create safety plan if needed
+  if (bullyingData.safetyPlan) {
+    createSafetyPlan(bullyingData.victimId, incidentId);
+  }
+  
+  return {
+    success: true,
+    incidentId: incidentId
+  };
+}
+/**
+ * Determine bullying severity based on type and frequency
+ */
+function determineBullyingSeverity(bullyingData) {
+  const typeseverity = {
+    'PHYSICAL_BULLYING': 'MAJOR',
+    'VERBAL_BULLYING': 'MODERATE',
+    'SOCIAL_BULLYING': 'MODERATE',
+    'CYBERBULLYING': 'MAJOR',
+    'SEXUAL_HARASSMENT': 'SEVERE',
+    'DISCRIMINATORY_BULLYING': 'MAJOR'
+  };
+  
+  let baseSeverity = typeseverity[bullyingData.bullyingType] || 'MODERATE';
+  
+  // Escalate based on frequency
+  if (bullyingData.frequency === 'ONGOING' || bullyingData.frequency === 'ESCALATED') {
+    if (baseSeverity === 'MODERATE') baseSeverity = 'MAJOR';
+    else if (baseSeverity === 'MAJOR') baseSeverity = 'SEVERE';
+  }
+  
+  return baseSeverity;
+}
+/**
+ * Send comprehensive bullying notifications
+ */
+function sendBullyingNotifications(bullyingData, incidentId) {
+  // Notify bully's parents
+  sendBullyParentNotification(bullyingData.bullyId, incidentId, bullyingData);
+  
+  // Notify victim's parents
+  sendVictimParentNotification(bullyingData.victimId, incidentId, bullyingData);
+  
+  // Notify additional student parents if involved
+  bullyingData.additionalStudents.forEach(student => {
+    if (student.role.includes('BULLY')) {
+      sendBullyParentNotification(student.studentId, incidentId, bullyingData);
+    } else if (student.role.includes('VICTIM')) {
+      sendVictimParentNotification(student.studentId, incidentId, bullyingData);
+    }
+  });
+}
+/**
+ * Send notification to bully's parent
+ */
+function sendBullyParentNotification(studentId, incidentId, bullyingData) {
+  const studentInfo = getStudentBehaviorInfo(studentId);
+  const parentPhone = studentInfo.parentPhone;
+  
+  if (parentPhone) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const notificationSheet = ss.getSheetByName('BEHAVIOR_NOTIFICATIONS');
+    
+    const message = `🏫 *SmartGenEduX Disciplinary Alert*
+🚨 *Serious Incident Report*
+👨‍👩‍👧‍👦 Dear Parent,
+We need to discuss a serious incident involving *${studentInfo.name}* (Class ${studentInfo.class}-${studentInfo.section}).
+📋 *Incident:* ${bullyingData.bullyingType.replace('_', ' ')}
+📅 *Date:* ${new Date().toLocaleDateString()}
+📍 *Location:* ${bullyingData.location}
+📝 *Details:* ${bullyingData.description}
+This behavior is unacceptable and requires immediate intervention.
+⚠️ *Action Required:* Parent meeting scheduled within 24 hours
+📞 *Please contact school immediately:* 9952912772
+We are committed to creating a safe environment for all students.
+*Powered by SmartGenEduX Educational Management*`;
+    
+    // Log notification
+    const notificationRecord = [
+      'BBUL' + new Date().getTime(),
+      studentId,
+      studentInfo.name,
+      'BULLYING_PERPETRATOR_ALERT',
+      parentPhone,
+      message,
+      'PENDING',
+      new Date(),
+      'WHATSAPP',
+      incidentId
+    ];
+    
+    notificationSheet.appendRow(notificationRecord);
+  }
+}
+/**
+ * Send notification to victim's parent
+ */
+function sendVictimParentNotification(studentId, incidentId, bullyingData) {
+  const studentInfo = getStudentBehaviorInfo(studentId);
+  const parentPhone = studentInfo.parentPhone;
+  
+  if (parentPhone) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const notificationSheet = ss.getSheetByName('BEHAVIOR_NOTIFICATIONS');
+    
+    const message = `🏫 *SmartGenEduX Safety Alert*
+🛡️ *Student Safety Notification*
+👨‍👩‍👧‍👦 Dear Parent,
+We want to inform you about an incident involving *${studentInfo.name}* (Class ${studentInfo.class}-${studentInfo.section}).
+📋 *Incident Type:* ${bullyingData.bullyingType.replace('_', ' ')}
+📅 *Date:* ${new Date().toLocaleDateString()}
+📍 *Location:* ${bullyingData.location}
+We have taken immediate action to ensure your child's safety and well-being.
+✅ *Actions Taken:*
+- Incident thoroughly investigated
+- Appropriate disciplinary measures applied
+- Counseling support provided
+${bullyingData.safetyPlan ? '- Safety plan implemented' : ''}
+📞 *Contact us anytime:* 9952912772
+📧 Email: prativedan@smartgenedx.org
+Your child's safety is our top priority.
+*Powered by SmartGenEduX Educational Management*`;
+    
+    // Log notification
+    const notificationRecord = [
+      'BVIC' + new Date().getTime(),
+      studentId,
+      studentInfo.name,
+      'BULLYING_VICTIM_SUPPORT',
+      parentPhone,
+      message,
+      'PENDING',
+      new Date(),
+      'WHATSAPP',
+      incidentId
+    ];
+    
+    notificationSheet.appendRow(notificationRecord);
+  }
+}
+/**
+ * Create safety plan for victim
+ */
+function createSafetyPlan(studentId, incidentId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const safetyPlanSheet = createSheetIfNotExists('SAFETY_PLANS', setupSafetyPlansSheet);
+  
+  const safetyPlanId = 'SAFE' + new Date().getTime();
+  const studentInfo = getStudentBehaviorInfo(studentId);
+  
+  const safetyPlanRecord = [
+    safetyPlanId,
+    studentId,
+    studentInfo.name,
+    studentInfo.class + '-' + studentInfo.section,
+    incidentId,
+    new Date(),
+    'ACTIVE',
+    'Increased supervision during breaks',
+    'Modified seating arrangement',
+    'Check-in with counselor daily',
+    'Safe reporting system activated',
+    Session.getActiveUser().getEmail(),
+    'Created due to bullying incident'
+  ];
+  
+  safetyPlanSheet.appendRow(safetyPlanRecord);
+}
+/**
+ * Show comprehensive behavior analytics
+ */
+function showBehaviorAnalytics() {
+  const analytics = generateBehaviorAnalytics();
+  
+  const html = HtmlService.createHtmlOutput(`
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+      .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+      .metric { text-align: center; margin-bottom: 20px; }
+      .metric-value { font-size: 28px; font-weight: bold; margin-bottom: 5px; }
+      .metric-label { color: #666; font-size: 14px; }
+      .positive { color: #4CAF50; }
+      .warning { color: #FF9800; }
+      .danger { color: #F44336; }
+      .level-green { background: #4CAF50; color: white; padding: 5px 10px; border-radius: 15px; }
+      .level-yellow { background: #FF9800; color: white; padding: 5px 10px; border-radius: 15px; }
+      .level-red { background: #F44336; color: white; padding: 5px 10px; border-radius: 15px; }
+      .incident-list { max-height: 200px; overflow-y: auto; }
+      .incident-item { padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; }
+    </style>
+    
+    <h1>🎯 SmartGenEduX Behavior Analytics Dashboard</h1>
+    
+    <div class="dashboard">
+      <div class="card">
+        <h3>📊 Overall Behavior Health</h3>
+        <div class="metric">
+          <div class="metric-value positive">${analytics.averageBehaviorScore}</div>
+          <div class="metric-label">Average Behavior Score</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value ${analytics.totalIncidents > 10 ? 'danger' : 'positive'}">${analytics.totalIncidents}</div>
+          <div class="metric-label">Total Incidents This Month</div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3>🚨 Risk Level Distribution</h3>
+        <div style="margin-bottom: 10px;">
+          <span class="level-green">GREEN: ${analytics.greenLevel} students</span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <span class="level-yellow">YELLOW: ${analytics.yellowLevel} students</span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <span class="level-red">RED: ${analytics.redLevel} students</span>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3>🌟 Positive Recognition</h3>
+        <div class="metric">
+          <div class="metric-value positive">${analytics.totalAchievements}</div>
+          <div class="metric-label">Total Achievements This Month</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value positive">${analytics.averagePositivePoints}</div>
+          <div class="metric-label">Average Positive Points</div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3>🚨 Bullying Prevention</h3>
+        <div class="metric">
+          <div class="metric-value ${analytics.bullyingIncidents > 0 ? 'danger' : 'positive'}">${analytics.bullyingIncidents}</div>
+          <div class="metric-label">Bullying Incidents This Month</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">${analytics.activeCounselorReferrals}</div>
+          <div class="metric-label">Active Counselor Cases</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card" style="margin-top: 20px;">
+      <h3>⚠️ Students Requiring Attention</h3>
+      <div class="incident-list">
+        ${analytics.studentsAtRisk.map(student => `
+          <div class="incident-item">
+            <strong>${student.name}</strong> (${student.class}) - 
+            Score: ${student.score}/100, 
+            <span class="level-${student.level.toLowerCase()}">${student.level}</span>
+            ${student.lastIncident ? ', Last incident: ' + student.lastIncident : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    
+    <div class="card" style="margin-top: 20px;">
+      <h3>🏆 Top Performers This Month</h3>
+      <div class="incident-list">
+        ${analytics.topPerformers.map(student => `
+          <div class="incident-item">
+            <strong>${student.name}</strong> (${student.class}) - 
+            Score: ${student.score}/100, 
+            Points: ${student.points}
+            ${student.lastAchievement ? ', Last achievement: ' + student.lastAchievement : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).setWidth(1000).setHeight(800);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'SmartGenEduX Behavior Analytics');
+}
+/**
+ * Generate comprehensive behavior analytics
+ */
+function generateBehaviorAnalytics() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const behaviorMasterSheet = ss.getSheetByName('STUDENT_BEHAVIOR_MASTER');
+  const incidentSheet = ss.getSheetByName('INCIDENT_RECORDS');
+  const achievementSheet = ss.getSheetByName('POSITIVE_BEHAVIOR_LOG');
+  
+  const behaviorData = behaviorMasterSheet.getDataRange().getValues();
+  const incidentData = incidentSheet.getDataRange().getValues();
+  const achievementData = achievementSheet.getDataRange().getValues();
+  
+  // Calculate overall metrics
+  let totalScore = 0;
+  let greenLevel = 0;
+  let yellowLevel = 0;
+  let redLevel = 0;
+  let totalPositivePoints = 0;
+  let studentsAtRisk = [];
+  let topPerformers = [];
+  
+  behaviorData.forEach((row, index) => {
+    if (index === 0) return; // Skip header
+    
+    const score = parseFloat(row[5]) || 0;
+    const level = row[8];
+    const positivePoints = parseInt(row[7]) || 0;
+    
+    totalScore += score;
+    totalPositivePoints += positivePoints;
+    
+    if (level === 'GREEN') greenLevel++;
+    else if (level === 'YELLOW') yellowLevel++;
+    else if (level === 'RED') redLevel++;
+    
+    // Identify students at risk
+    if (level === 'RED' || score < 70) {
+      studentsAtRisk.push({
+        name: row[1],
+        class: row[2] + '-' + row[3],
+        score: score,
+        level: level,
+        lastIncident: row[9] !== 'N/A' ? row[9] : null
+      });
+    }
+    
+    // Identify top performers
+    if (score >= 90 && positivePoints >= 15) {
+      topPerformers.push({
+        name: row[1],
+        class: row[2] + '-' + row[3],
+        score: score,
+        points: positivePoints,
+        lastAchievement: row[10] !== 'N/A' ? row[10] : null
+      });
+    }
+  });
+  
+  // Count recent incidents and achievements
+  const thisMonth = new Date().getMonth();
+  const thisYear = new Date().getFullYear();
+  
+  let totalIncidents = 0;
+  let bullyingIncidents = 0;
+  
+  incidentData.forEach((row, index) => {
+    if (index === 0) return;
+    const incidentDate = new Date(row[1]);
+    if (incidentDate.getMonth() === thisMonth && incidentDate.getFullYear() === thisYear) {
+      totalIncidents++;
+      if (row[6].includes('BULLYING')) {
+        bullyingIncidents++;
+      }
+    }
+  });
+  
+  let totalAchievements = 0;
+  achievementData.forEach((row, index) => {
+    if (index === 0) return;
+    const achievementDate = new Date(row[1]);
+    if (achievementDate.getMonth() === thisMonth && achievementDate.getFullYear() === thisYear) {
+      totalAchievements++;
+    }
+  });
+  
+  const studentCount = behaviorData.length - 1; // Exclude header
+  
+  return {
+    averageBehaviorScore: studentCount > 0 ? (totalScore / studentCount).toFixed(1) : 0,
+    totalIncidents: totalIncidents,
+    totalAchievements: totalAchievements,
+    averagePositivePoints: studentCount > 0 ? (totalPositivePoints / studentCount).toFixed(1) : 0,
+    greenLevel: greenLevel,
+    yellowLevel: yellowLevel,
+    redLevel: redLevel,
+    bullyingIncidents: bullyingIncidents,
+    activeCounselorReferrals: 5, // This would be calculated from counselor referrals sheet
+    studentsAtRisk: studentsAtRisk.slice(0, 10), // Top 10 at risk
+    topPerformers: topPerformers.slice(0, 10) // Top 10 performers
+  };
+}
+/**
+ * Helper functions for setup
+ */
+function setupCounselorReferralsSheet(sheet) {
+  const headers = [
+    'REFERRAL_ID', 'STUDENT_ID', 'STUDENT_NAME', 'CLASS', 'INCIDENT_ID',
+    'REFERRAL_TYPE', 'URGENCY', 'REFERRAL_DATE', 'APPOINTMENT_DATE',
+    'STATUS', 'REFERRED_BY', 'COUNSELOR_ASSIGNED', 'NOTES', 'OUTCOME'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#9C27B0').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+function setupParentConferencesSheet(sheet) {
+  const headers = [
+    'CONFERENCE_ID', 'STUDENT_ID', 'STUDENT_NAME', 'INCIDENT_ID',
+    'CONFERENCE_DATE', 'ATTENDEES', 'AGENDA', 'OUTCOMES',
+    'ACTION_PLAN', 'FOLLOW_UP_DATE', 'STATUS', 'NOTES'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#795548').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+function setupBehaviorAnalyticsSheet(sheet) {
+  const headers = [
+    'DATE', 'TOTAL_STUDENTS', 'AVG_BEHAVIOR_SCORE', 'INCIDENTS_COUNT',
+    'ACHIEVEMENTS_COUNT', 'GREEN_LEVEL_COUNT', 'YELLOW_LEVEL_COUNT',
+    'RED_LEVEL_COUNT', 'COUNSELOR_REFERRALS', 'BULLYING_INCIDENTS'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#607D8B').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+function setupRecognitionAwardsSheet(sheet) {
+  const headers = [
+    'AWARD_ID', 'STUDENT_ID', 'STUDENT_NAME', 'AWARD_TYPE',
+    'AWARD_DATE', 'CRITERIA_MET', 'POINTS_VALUE', 'CERTIFICATE_ISSUED',
+    'PUBLIC_RECOGNITION', 'AWARDED_BY', 'NOTES'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#FF5722').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+function setupBehaviorNotificationsSheet(sheet) {
+  const headers = [
+    'NOTIFICATION_ID', 'STUDENT_ID', 'STUDENT_NAME', 'NOTIFICATION_TYPE',
+    'RECIPIENT_PHONE', 'MESSAGE_TEXT', 'STATUS', 'SENT_TIME',
+    'CHANNEL', 'REFERENCE_ID'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#3F51B5').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+function setupSafetyPlansSheet(sheet) {
+  const headers = [
+    'SAFETY_PLAN_ID', 'STUDENT_ID', 'STUDENT_NAME', 'CLASS', 'INCIDENT_ID',
+    'CREATED_DATE', 'STATUS', 'SUPERVISION_PLAN', 'SEATING_ARRANGEMENT',
+    'COUNSELOR_CHECKIN', 'REPORTING_SYSTEM', 'CREATED_BY', 'NOTES'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold')
+    .setBackground('#8BC34A').setFontColor('white');
+  
+  sheet.setFrozenRows(1);
+  
+  for (let i = 1; i <= headers.length; i++) {
+    sheet.autoResizeColumn(i);
+  }
+}
+/**
+ * Initialize sample behavior data
+ */
+function initializeBehaviorSampleData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const behaviorSheet = ss.getSheetByName('STUDENT_BEHAVIOR_MASTER');
+  
+  const sampleData = [
+    ['STU001', 'Raj Kumar', '10', 'A', '9876543210', 92, 0, 25, 'GREEN', 'N/A', '2024-01-15', '', 'Model student'],
+    ['STU002', 'Priya Sharma', '9', 'B', '9876543211', 78, 2, 15, 'YELLOW', '2024-01-10', '2024-01-12', '', 'Needs attention'],
+    ['STU003', 'Arjun Patel', '11', 'A', '9876543212', 65, 4, 8, 'RED', '2024-01-08', 'N/A', 'Ms. Smith', 'High risk student'],
+    ['STU004', 'Anita Singh', '8', 'C', '9876543213', 88, 1, 20, 'GREEN', '2023-12-20', '2024-01-14', '', 'Good progress'],
+    ['STU005', 'Vikram Reddy', '12', 'A', '9876543214', 95, 0, 30, 'GREEN', 'N/A', '2024-01-16', '', 'Outstanding behavior']
+  ];
+  
+  behaviorSheet.getRange(2, 1, sampleData.length, sampleData[0].length).setValues(sampleData);
+}
+/**
+ * Send behavior notifications
+ */
+function sendBehaviorNotifications() {
+  SpreadsheetApp.getUi().alert(
+    '📱 Behavior Notification System\n\n' +
+    'WhatsApp notifications are automatically sent when:\n' +
+    '• Incidents are recorded\n' +
+    '• Achievements are logged\n' +
+    '• Bullying incidents occur\n' +
+    '• Safety plans are created\n\n' +
+    'All notifications are logged in the BEHAVIOR_NOTIFICATIONS sheet.'
+  );
+}
+/**
+ * Generate behavior reports
+ */
+function generateBehaviorReports() {
+  const analytics = generateBehaviorAnalytics();
+  
+  SpreadsheetApp.getUi().alert(
+    '📊 SmartGenEduX Behavior Reports Generated!\n\n' +
+    `📈 Average Behavior Score: ${analytics.averageBehaviorScore}/100\n` +
+    `🚨 Total Incidents: ${analytics.totalIncidents}\n` +
+    `🌟 Total Achievements: ${analytics.totalAchievements}\n` +
+    `🚨 Bullying Incidents: ${analytics.bullyingIncidents}\n` +
+    `🟢 Green Level: ${analytics.greenLevel} students\n` +
+    `🟡 Yellow Level: ${analytics.yellowLevel} students\n` +
+    `🔴 Red Level: ${analytics.redLevel} students\n\n` +
+    'Detailed analytics available in the dashboard!'
+  );
+}
+/**
+ * Web API for behavior management
+ */
+function doGet(e) {
+  const action = e.parameter.action;
+  
+  switch (action) {
+    case 'behaviorAnalytics':
+      return ContentService
+        .createTextOutput(JSON.stringify(generateBehaviorAnalytics()))
+        .setMimeType(ContentService.MimeType.JSON);
+    
+    case 'studentBehavior':
+      const studentId = e.parameter.studentId;
+      return ContentService
+        .createTextOutput(JSON.stringify(getStudentBehaviorInfo(studentId)))
+        .setMimeType(ContentService.MimeType.JSON);
+    
+    default:
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          status: 'success',
+          message: 'SmartGenEduX Behavior Management API is running',
+          endpoints: ['behaviorAnalytics', 'studentBehavior']
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+/**
+ * Deploy behavior API
+ */
+function deployBehaviorAPI() {
+  const url = ScriptApp.getService().getUrl();
+  
+  SpreadsheetApp.getUi().alert(
+    '🌐 SmartGenEduX Behavior Management API Deployed!\n\n' +
+    'API URL: ' + url + '\n\n' +
+    'Available endpoints:\n' +
+    '• ?action=behaviorAnalytics - Get behavior analytics\n' +
+    '• ?action=studentBehavior&studentId=STU001 - Get student behavior info\n\n' +
+    'Use this URL in your SmartGenEduX web platform!'
+  );
+}
+/**
+ * Helper function for sheet creation
+ */
+function createSheetIfNotExists(sheetName, setupFunction) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
+  
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+  
+  if (setupFunction) {
+    setupFunction(sheet);
+  }
+  
+  return sheet;
+}
+function doGet(e) {
+  const action = e.parameter.action;
+  
+  switch(action) {
+    case 'getBehaviorData':
+      return ContentService.createTextOutput(JSON.stringify(getAllBehaviorData()))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'getBehaviorAnalytics':
+      return ContentService.createTextOutput(JSON.stringify(getBehaviorAnalytics()))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'getStudentBehavior':
+      const studentId = e.parameter.studentId;
+      return ContentService.createTextOutput(JSON.stringify(getStudentBehavior(studentId)))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'getIncidentReports':
+      return ContentService.createTextOutput(JSON.stringify(getIncidentReports()))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'getRecognitionData':
+      return ContentService.createTextOutput(JSON.stringify(getRecognitionData()))
+        .setMimeType(ContentService.MimeType.JSON);
+    case 'getBullyingReports':
+      return ContentService.createTextOutput(JSON.stringify(getBullyingReports()))
+        .setMimeType(ContentService.MimeType.JSON);
+    default:
+      return ContentService.createTextOutput('{"error": "Invalid action"}')
+        .setMimeType(ContentService.MimeType.JSON);
+  }
+}
